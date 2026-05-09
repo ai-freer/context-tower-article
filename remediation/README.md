@@ -1,6 +1,6 @@
 # Remediation scripts — 2026-05-09/10 OpenClaw audit-driven session
 
-基于 `memory-system-audit-2026-05-04.md` 的 P0/P1/P2 待改进项，在 2026-05-09/10
+基于 `00-audit.md` 的 P0/P1/P2 待改进项，在 2026-05-09/10
 跨夜的 session 里逐项落地的脚本集合。每个脚本都设计为可重跑、有 backup、
 失败可回滚，并在执行前打 dry-run 或权限检查。
 

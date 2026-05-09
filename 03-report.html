@@ -486,6 +486,91 @@ footer {
 
 h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 .anchor:hover { opacity: 1 !important; }
+
+/* TL;DR / positioning callout at top */
+.tldr {
+  margin: 24px 0 32px;
+  padding: 18px 22px;
+  background: var(--bg-soft);
+  border-left: 4px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  font-size: 14.5px;
+  line-height: 1.7;
+}
+
+.tldr-row { display: flex; gap: 12px; align-items: baseline; }
+.tldr-row + .tldr-row { margin-top: 6px; }
+.tldr-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  width: 80px;
+  padding-top: 2px;
+}
+
+/* Key points box (4 theses) */
+.key-points {
+  margin: 28px 0;
+  padding: 20px 24px 16px;
+  background: var(--accent-soft);
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  border-color: var(--accent);
+  border-style: solid;
+  border-width: 0 0 0 4px;
+}
+
+.key-points h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.key-points ol {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 15px;
+}
+
+.key-points ol li { margin: 6px 0; color: var(--fg); }
+.key-points ol li::marker { color: var(--accent); font-weight: 700; }
+
+/* 3 vs 9 comparison table */
+.comparison th:first-child { color: var(--fg-soft); font-weight: 500; width: 22%; }
+.comparison th:nth-child(2) { color: var(--fg); }
+.comparison th:nth-child(3) { color: var(--accent); }
+
+.comparison td:first-child { font-weight: 600; color: var(--fg-muted); white-space: nowrap; }
+.comparison td:nth-child(3) { background: var(--accent-soft); color: var(--fg); font-weight: 500; }
+
+/* Closing emphasis */
+.closing-emphasis {
+  margin: 28px 0;
+  padding: 24px 28px;
+  background: var(--bg-soft);
+  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+}
+
+.closing-emphasis p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.7;
+  font-weight: 500;
+}
+
+.closing-emphasis p + p {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--fg-muted);
+}
 </style>
 </head>
 <body>
@@ -543,6 +628,17 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 基于 OpenClaw 多 Agent 环境中近一个月的实际运行经验。九层塔不是一次性设计出来的，而是在解决一个又一个实际问题的过程中逐步演化而成。<strong>运维治理本身也是架构成熟的一部分。</strong>
 </div>
 
+<aside class="tldr">
+<div class="tldr-row">
+<span class="tldr-label">本文面向</span>
+<span>OpenClaw 进阶用户与 AI Agent builder。介于纯架构文章和轻教程之间——不是 step-by-step 安装教程，但解释关键依赖与决策因素。</span>
+</div>
+<div class="tldr-row">
+<span class="tldr-label">本文在讲</span>
+<span>三层记忆架构回答的是「如何开始让 Agent 记住东西」；<strong>九层塔回答的是「如何让 Agent 在长期运行、多会话、多任务、多 Agent 协作中持续治理上下文」</strong>。</span>
+</div>
+</aside>
+
 <h2 id="intro">引言：大窗口的幻觉<a class="anchor" href="#intro">#</a></h2>
 
 <p>上下文窗口从 4K 到 128K 再到 1M+，很多人以为"窗口够大就不需要记忆管理了"。</p>
@@ -559,6 +655,16 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 </ul>
 <p>这些问题，不是靠"更大的窗口"能解决的。它们需要的是 <strong>Context Engineering</strong>——对上下文的工程化治理。</p>
 <p>本文介绍一套经过近一个月迭代、在 OpenClaw 多 Agent 环境中实际运行的上下文管理架构。我们称之为"九层塔"。</p>
+
+<aside class="key-points">
+<h3>本文的 4 个核心观点</h3>
+<ol>
+<li>大上下文窗口不是上下文管理。</li>
+<li>记忆不是简单堆文件或向量库。</li>
+<li>一个可长期运行的 Agent，需要把身份、规则、记忆、检索、召回、压缩、整理、反思、技能化连成<strong>闭环</strong>。</li>
+<li>Context Engineering 的关键是<strong>"治理上下文"</strong>：写入、召回、压缩、清噪、晋升、验证、回滚。</li>
+</ol>
+</aside>
 
 <h2 id="three-to-nine">从三层到九层：为什么简单记忆不够<a class="anchor" href="#three-to-nine">#</a></h2>
 
@@ -577,6 +683,21 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 <li><strong>重复劳动</strong>：同样的任务做了十次，每次从零开始</li>
 </ol>
 <p>九层塔就是为了解决这些问题而逐步演化出来的。</p>
+
+<table class="comparison">
+<thead>
+<tr><th></th><th>三层记忆架构</th><th>九层塔</th></tr>
+</thead>
+<tbody>
+<tr><td>回答问题</td><td>如何开始让 Agent 记住东西</td><td>如何让 Agent 在长期运行中持续治理上下文</td></tr>
+<tr><td>核心抽象</td><td>身份 / 知识 / 行动</td><td>基础 / 运行时 / 进化（每组 3 层）</td></tr>
+<tr><td>适用场景</td><td>单轮 - 几轮对话内的记忆</td><td>跨天 / 跨周 / 多会话 / 多 Agent 协作</td></tr>
+<tr><td>关注重点</td><td>"记得住"</td><td>"记什么、何时召回、如何压缩、怎样进化"</td></tr>
+<tr><td>侧重</td><td>设计正确的入门记忆模型</td><td>把上下文相关功能纳入<strong>可治理系统</strong></td></tr>
+</tbody>
+</table>
+
+<p>九层塔不是替代三层架构，而是在三层之上回答了"系统化治理"这个新问题。两者读起来可对比，但本文不依赖你读过前文。</p>
 
 <h2 id="overview">九层塔总览<a class="anchor" href="#overview">#</a></h2>
 
@@ -998,15 +1119,16 @@ L9 技能进化（workflow → skill）
 
 <p>好的 Agent 不是"记得更多"，而是"知道什么该记、什么时候召回、何时压缩、如何清噪、怎样从经验中进化"。</p>
 
-<p style="font-size: 18px; font-weight: 500; padding: 20px 24px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--accent); margin: 28px 0;">
-这就是 Context Engineering 的本质：不是管理上下文的大小，而是管理上下文的生命周期。
-</p>
+<div class="closing-emphasis">
+<p>这就是 Context Engineering 的本质：不是管理上下文的大小，而是<strong>管理上下文的生命周期</strong>。</p>
+<p>九层塔的价值不是多一堆模块，而是让上下文进入 <strong>可观测、可修复、可进化</strong> 的工程闭环。</p>
+</div>
 
 <footer>
 本文基于 OpenClaw 多 Agent 环境中近一个月的实际运行经验。九层塔不是一次性设计出来的，而是在解决一个又一个实际问题的过程中逐步演化而成。运维治理本身也是架构成熟的一部分。
 <br><br>
 <span style="font-style: normal; font-size: 12px; color: var(--fg-soft);">
-v2 · 2026-05-10 · 来源 <a href="https://github.com/ai-freer/context-tower-article" style="color: inherit;">ai-freer/context-tower-article</a>
+v2 · 2026-05-10 · Markdown 源 <a href="https://github.com/ai-freer/context-tower-article/blob/main/02-report.md" style="color: inherit;">02-report.md</a> · Repo <a href="https://github.com/ai-freer/context-tower-article" style="color: inherit;">ai-freer/context-tower-article</a>
 </span>
 </footer>
 
