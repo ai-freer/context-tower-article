@@ -170,6 +170,8 @@ memory/
 - 只看“文件已索引”，忽略 embedding 覆盖率。
 - exact query 被日志/评论文件排在源文件前面。
 - fallback 静默工作，掩盖 primary backend 的性能问题。
+- **检索 CLI 的 stdout 容错**：当检索层 shell-out 到第三方 CLI（如 qmd）时，CLI 在 collection 不存在 / 参数异常时可能往 stdout 写 `Warning:` / `Usage:` 等非 JSON 文本。下游 JSON parser 必须**容错地跳过非 JSON 前缀**而不是抛错——抛错会让多 collection 路径整体退化到慢 fallback。最佳实践：parser 失败时 log warn + 返回空数组，让上层继续遍历其他 collection。
+- **Index hygiene**：定期对每个 agent 的 index 跑 `cleanup`，去除 orphan 向量（content 已删但 vector 未清的脏数据）。orphan 比例 > 50% 是 index 体积膨胀的常见原因。
 
 ### L5 主动召回层：消息前自动带上下文
 
@@ -189,33 +191,48 @@ memory/
 - 低质量摘要污染当前对话。
 - active memory 输出被误当作 trusted fact。
 - recall subagent timeout 太短或模型太弱。
+- **检索后端单点失败传染整条链路**：active memory 通常调用底层检索（L4），底层在多 collection 模式下若任一子 query 抛错，会让整条召回 retreat 到 builtin slow path（>10s / 0 hits）。要让底层容错（见 L4 parser 建议），主动召回层才能稳定。
 
 治理建议：
 
 - 注入内容标记为 untrusted context。
 - 加质量阈值、空结果过滤、debug summary。
 - 对慢 query 可以选择更轻的 search/vsearch 模式。
+- **隔离失败域**：active memory 一次召回内部可能跨多个 collection / 多个数据源。任一子查询失败应该只丢自己的结果，不应让整条召回链失败。这要求 L4 parser 是 forgiving 的（fail-soft 返回 []），不是 fail-hard 抛异常。
 
-### L6 会话生存层：长会话不丢上下文
+### L6 会话生存层 + 无损压缩引擎：长会话不丢上下文
 
 组件示例：
 
-- Session Memory hook
-- session transcript export
-- compaction safeguard
-- memoryFlush before compaction
-- lossless/context compaction plugin（如有）
+- Pluggable context engine（绑定到 `plugins.slots.contextEngine`）
+- 实时摄入消息的 LCM-style sqlite store（lcm.db）
+- DAG 层级摘要（leaf → condensed → root）
+- Session Memory hook + session transcript export
+- compaction safeguard + memoryFlush（兜底）
+- lcm_grep / lcm_describe / lcm_expand_query（会话历史检索补充 L4）
 
 职责：
 
-- 将会话历史保存为可恢复、可搜索的材料。
-- 在上下文窗口接近极限时，先把重要信息写入 durable memory。
+- 将会话历史**实时摄入**到结构化 store，独立于 model context window。
+- 在 context window 接近极限时，从 DAG 中选取相关摘要 + 保留最近 N 条原文，组装下一轮 model context。
+- 大文件 / 大工具输出超阈值自动摘要（防 context 爆炸）。
+- 支持上层 agent 通过专用工具（lcm_grep 等）反向查询会话历史。
+
+最佳实践：
+
+- **绑定 context engine slot**：必须在配置里显式 `plugins.slots.contextEngine: "<engine-id>"`，否则系统默认使用 legacy 截断引擎（简单 FIFO 截断），即使 plugin 安装了也不会被加载。这是一个安静失败模式——文件 size 不增长、wal 不写入是排查信号。
+- **运行时上下文生存 ≠ 持久化记忆**：context engine 解决"当前长会话怎样继续保持连贯"；durable memory（L3）解决"跨 session 长期事实如何积累"。memoryFlush 是后者的 fallback safety rail，不是 L6 的主机制。
+- **ignoreSessionPatterns**：把 cron / subagent 等内部 session 排除在摄入之外，从源头减少噪声进入 DAG 和下游 L7 整理。
+- **🔒 LLM 摘要前 redact secrets**：摘要器（doubao/lite 类小模型）会原样保留源消息里的 API key / bot token 等敏感字符串。这些 secrets 一旦进入 summaries 表就会被 FTS 索引、被 vector embedding 收录、并在下次 context assembly 时再次注入新 prompt——形成持续放大。**最佳实践**：在调 summarize LLM **之前**对源做 regex redaction（`sk-[A-Za-z0-9_-]{32,}` / Bearer / `\d{8,12}:[token]` 等），让 LLM 永远见不到原始 secret。
+- **短源跳过 LLM**：源 < 200 tokens 直接 store-as-is，不调 summarizer。否则会出现"摘要比源还长"的反向情况（LLM 只是把原文加 timestamp 包装），既浪费 LLM 调用又虚耗 token。
 
 常见坑：
 
 - compaction/heartbeat/system prompt 被写入 transcript，后续又被 Dreaming 晋升。
 - 只依赖大窗口模型，不做显式持久化。
 - 长任务没有外化 plan，压缩后目标漂移。
+- **配置级安静失败**：`plugins.slots.contextEngine` 缺失时系统不报错，只是 lcm.db 永不增长。需要 L7 的健康监控（见下）才能在第 1 周内发现，否则是"40 天才知道"级别的回归。
+- **secrets 经摘要放大**：raw 消息里的 secret 容易识别（grep）也容易脱敏；但 LLM 摘要把它换个上下文重新包装后，固定的 grep 规则不一定能再 catch。在源头 redact 比事后 audit 容易得多。
 
 ### L7 后台整理层：Dreaming 消化上下文
 
@@ -226,22 +243,38 @@ memory/
 - promotion artifacts
 - session-corpus
 - post-sweep watchdog
+- L6 健康监控 cron（监控 lcm.db 增长 + DAG 比例 + WAL 状态）
 
 职责：
 
 - 将短期 recall、session corpus、daily notes 做后台整理。
 - 提炼候选长期记忆，去重、晋升、生成摘要。
+- **监控 L6 引擎本身的健康度**：context engine 是个安静失败的组件（不写入即等于沉默），需要后台周期性巡检指标。
 
 工程案例：post-dreaming hygiene
 
 - Dreaming 本身能整理记忆，但也可能把 heartbeat / maintenance / compaction 噪声纳入候选。
 - 因此需要 post-sweep watchdog：检查产物、清理噪声、统计 promotion ratio、报告异常。
 
+工程案例：L6 健康监控 cron 阈值（推荐周度跑）
+
+```
+🔴 ingest_silent: msgs_24h == 0 且 msgs_7d < 100 (引擎沉默)
+🔴 lcm_stalled: newest_message_age > 7 天 (组装停摆)
+🔴 wal_corrupted: WAL > 200MB (checkpoint 死锁)
+🟡 dag_shallow: condensed/leaf < 5% (压缩没在做层级聚合)
+🟡 wal_bloat: WAL > 50MB (checkpoint 滞后)
+🟢 healthy: 以上都不触发
+```
+
+只有 🔴 才发告警；🟡/🟢 只写报告不打扰，避免告警疲劳。
+
 常见坑：
 
 - 后台任务成功，但报告投递失败，导致无人知道结果。
 - 噪声进入 corpus 后被长期污染。
 - promotion threshold 太宽，低价值内容晋升。
+- **健康监控空缺**：context engine 等"安静失败"组件如果不被周期性 sanity-check，回归发现窗口可能从"1 周"变成"40 天"。
 
 ### L8 自我迭代层：从错误中改进行为
 
@@ -260,11 +293,18 @@ memory/self-improving/
 - 保存错误、纠正、反思、行为信号。
 - 将重复出现的纠错晋升为稳定规则。
 
+最佳实践：
+
+- **agent identity mapping 唯一规范**：自我迭代目录用 agent id（如 `main` / `lisa` / `doubao` / `nyx`），不用 persona name（如 `Lolita`）。所有跨进程协作（cron、patrol、promotion、reflection）都按这同一份 mapping 走。
+- **cron payload 用绝对路径**：周期性自反思任务的提示词不要写相对路径 `memory/self-improving/X/hot.md`——cwd 取决于 agent workspace，会把同一 agent 的内容写到不同 workspace 的同名目录里造成 split。统一用 `/root/.openclaw/workspace/memory/self-improving/<agent-id>/...` 的绝对路径。
+- **patrol 用枚举白名单**：`KNOWN_AGENTS=("lisa" "main" "doubao" "nyx")` + `KNOWN_FILES=("hot.md" "corrections.md" "signals.md" "README.md")`，扫到不在白名单的就报"未知 agent 目录" / "未知文件"。这能在第 1 周内发现命名漂移、拼写错误（如 `corrrections.md` 三个 r）、persona vs agent-id 大小写分裂等。
+
 常见坑：
 
 - 目录命名/agent identity mapping 不一致，导致扫描漏项。
 - 把一次性偏好过早晋升为全局规则。
 - 没有 reviewer 或 threshold，规则膨胀。
+- **persona vs agent-id 双轨命名**：当 agent 有 persona name（如 Lolita）和 system identifier（如 main）时，若不显式约定唯一规范，cron / 自反思 / patrol 之间会各自用不同名字写入，最终在文件系统上分裂为多个目录。
 
 ### L9 能力进化层：把经验变成技能
 
@@ -420,3 +460,59 @@ Suggested public wording:
 ### 14.3 V1 article implication
 
 The article should no longer imply that compaction memoryFlush is the main session-survival mechanism. MemoryFlush is a durable fallback. The center of L6 should be the context-engine slot, with memoryFlush and safeguard compaction as safety rails.
+
+## 15. 源码层适配 / Upstream adaptations
+
+九层塔里有几个组件是开源 / 第三方实现，落地到生产时**对原项目做了少量源码适配**而不是只调配置。这是一种"工程现实"——读者应当被坦诚告知。
+
+### 15.1 哪些层涉及
+
+- **L4 语义检索**：检索 CLI 的输出 JSON parser 改成 fail-soft（warn + 返回 []，不 throw）。这避免单 collection 的 stdout 噪声把整条多 collection 检索拖垮。
+- **L6 会话生存 / 无损压缩引擎**：摘要 LLM 调用前注入 secret redaction（regex 替换 `sk-XXX` / Bearer / bot token 等），并加短源跳过阈值（< 200 tokens 直接 store，不调 LLM）。
+
+### 15.2 适配的 packaging 模式
+
+把这种"小修小补"打包成可观测、可重启自愈的形式，而不是临时 hotfix：
+
+| 要素 | 说明 |
+|---|---|
+| sentinel | 在 patched 区域留一行 `// PATCH:<name>` 注释，apply 脚本据此判断幂等 |
+| apply script | 单一的 idempotent shell / node 脚本，能反复跑 |
+| boot 集成 | gateway 启动时 `ExecStartPre` 自动跑 apply 脚本——npm 升级或 git pull 覆盖目标后下次重启自动重打 |
+| backup 文件 | apply 前自动 timestamp 备份，rollback 路径明确 |
+| descriptor 入版控 | `.patch` 文件（unified diff + prose 解释）入 git，记录"为什么做、做了什么"，编译产物 gitignore |
+| fail-closed | 找不到 anchor（上游改了函数体）则 patch 退出非零，apply 主流程容错继续，但日志留 trace 等待人工 review |
+
+这套机制让"对开源组件的小修整"成为**可维护的工程资产**，而不是"换台机器就丢"的临时改动。
+
+### 15.3 公开表述建议
+
+文章里如果要讲到这些适配，建议用类似措辞：
+
+> 这套架构里有两处对开源组件做了源码层小幅适配：检索层 parser 的容错、以及压缩层调 LLM 摘要前的 secret redaction。它们都通过启动时自动重打补丁的 patch 系统来持久化，对原项目无侵入，对升级友好。
+
+不必把每个 patch 的具体 diff 贴出来——重点是让读者知道"这是工程治理的一部分，不是设计上预期的开箱即用"。
+
+## 16. 踩坑提醒清单 / Operational pitfalls
+
+整篇文章末尾建议加一个集中的"运维真心话"小节，让读者一眼看到哪些是容易踩的雷。建议覆盖：
+
+| # | 坑 | 出现层 | 一句话提醒 |
+|---|---|---|---|
+| 1 | bootstrap 注入文件超阈值被截断 | L1/L2/L3 | MEMORY.md 这类文件要严格限定为"规则 + 索引"，自动 promotion 内容拆出去 |
+| 2 | embedding 覆盖率 ≠ 索引完成率 | L4 | "indexed=812"是文件级，"embedded chunks"是向量级，两者可以差几个数量级 |
+| 3 | 检索 CLI stdout 非 JSON 噪声 | L4 | qmd / vespa / 类似 CLI 在 collection 异常时往 stdout 写 warning，要 fail-soft parser |
+| 4 | 多 collection 路径单点失败传染 | L4/L5 | 一个 collection 的子查询抛错不应让整条 active-memory 退化到 builtin |
+| 5 | active-memory 注入低质量摘要 | L5 | 需要 minRelevanceScore + 模板化 fallback 过滤 + untrusted context 标记 |
+| 6 | context engine slot 没绑定 = 安静失败 | L6 | `plugins.slots.contextEngine` 缺失时系统不会报错，只是 lcm.db 永不增长——必须有 L7 健康监控 |
+| 7 | LLM 摘要把 secrets 经 FTS 放大 | L6 | 摘要器原样保留 sk-XXX / token，进 summaries_fts 后 lcm_grep 命中、vector embedding 收录、下次组装再注入 prompt——必须在调 LLM 前 redact |
+| 8 | 短源做 summary 反而变长 | L6 | 源 < 200 tokens 直接 return 原文，不要走 LLM——避免"摘要 = timestamp + 原文"的反向膨胀 |
+| 9 | session 内部消息（cron/subagent）污染 corpus | L6/L7 | `ignoreSessionPatterns` 在源头排除，比在 Dreaming 后清理高效 |
+| 10 | post-sweep watchdog 投递失败 → 无人知 | L7 | watchdog 自身也要监控；delivery 失败要降级到 local log + 告警 |
+| 11 | persona 名 vs agent id 双轨写入造成目录分裂 | L8 | 全局只用 agent id（main/lisa/...）；persona name 不进文件系统 |
+| 12 | cron payload 写相对路径在不同 cwd 下落到不同 workspace | L8 | 自反思 cron 一律用绝对路径 `/root/.openclaw/workspace/memory/self-improving/<id>/...` |
+| 13 | qmd / per-agent index 累积 orphan 向量 | L4 | 周期性 `qmd cleanup`，否则 sqlite 体积持续膨胀（实测可达 80%+ 是 orphan） |
+| 14 | sudoers 文件名带 `.` 被默认忽略 | 运维 | `/etc/sudoers.d/X.tmp` 不生效；要用 `X` 不带后缀，否则 `#includedir` 默认跳过 |
+| 15 | 升级后所有 patch 失效 | 运维 | npm 升级 / 上游 git pull 会盖掉源码——用 systemd `ExecStartPre` 自动重打的 patch 系统才能保护 |
+
+写文章时不需要列全 15 项，挑 5-7 个最有代表性的做深入解释即可（推荐：3, 6, 7, 8, 11, 13）。

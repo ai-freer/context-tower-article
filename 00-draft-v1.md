@@ -153,6 +153,8 @@ memory/
 - 只看"文件已索引"，忽略 embedding 覆盖率
 - Fallback 静默工作，掩盖 primary backend 的性能问题
 - exact query 被日志文件排在源文件前面（rerank 偏差）
+- 检索 CLI 的 stdout 不是干净 JSON——遇到 collection 不存在 / 参数异常时会先打印 `Warning:` 或 `Usage:` 文本再给 JSON。下游 parser 必须容错地跳过非 JSON 前缀，**抛错会让多 collection 路径整体退化到慢 fallback**
+- per-agent 索引会累积大量 orphan 向量（content 已删但 vector 留着），需要周期性 cleanup；orphan 占比 > 50% 是 sqlite 体积膨胀的常见原因
 
 ---
 
@@ -174,6 +176,7 @@ memory/
 - 低质量摘要污染当前对话
 - Active memory 输出被误当作 trusted fact
 - 召回 subagent timeout 太短，导致频繁空结果
+- **检索后端单点失败传染整条召回链**：active memory 调底层多 collection 检索时，任一子查询抛错会让整条召回退化到 builtin slow path（>10s / 0 hits）。L4 parser 必须 fail-soft（warn + 返回空数组），主动召回层才能稳定
 
 ---
 
@@ -192,17 +195,24 @@ memory/
 - L6 的中心不是单纯 flush，而是“运行时上下文生存”：谁负责摄入、压缩、组装当前会话
 - memoryFlush / safeguard compaction 是 fallback safety rail，不是替代 context engine 的主机制
 - 长任务应该外化 plan 到文件，而不是只存在 context 里
+- **必须显式绑定 contextEngine slot**：`plugins.slots.contextEngine` 不配置时，系统不会报错，只是悄悄回退到 legacy 截断引擎。这是个安静失败模式——文件 size 不增长、WAL 不写入是排查信号
+- **LLM 摘要前必须 redact secrets**：摘要器（doubao/lite 类小模型）原样保留源消息里的 API key / bot token。这些 secrets 一旦被写入 summary，会进入 FTS 索引、被 vector embedding 收录，并在下次组装 context 时再次被注入新 prompt——形成持续放大。最佳实践是在调 LLM **之前**做 regex redaction
+- **短源跳过 LLM**：源 < 200 tokens 直接 store-as-is，不调 summarizer。否则会出现"摘要 = timestamp 包装 + 原文"的反向膨胀，既浪费 LLM 调用又虚耗 token
 
 **工程 Insight**：
 > 一个成熟 Agent 需要“会话生存层”，而不只是更大的上下文窗口。检索层回答“该找回什么长期记忆”，context engine 回答“当前这条长会话怎样继续保持连贯”。两者互补，不互相替代。
 
 > compaction/heartbeat/system prompt 被写入 transcript 后，可能被后台整理层（L7）错误晋升为长期记忆。会话生存层和后台整理层之间需要噪声过滤机制。
 
+> Secrets 在 raw 消息里容易识别（grep 一抓一个准），但 LLM 摘要把它换个上下文重新表述后，固定的 grep 规则就不一定 catch 得到了。在源头 redact 比事后 audit 容易得多——这是 L6 必须正视的安全责任。
+
 **常见坑**：
 - 只依赖大窗口模型，不做显式 context engine / 持久化治理
 - 把 memoryFlush 当成主机制，而不是 fallback safety rail
 - 长任务没有外化 plan，压缩后目标漂移
 - 系统消息混入 transcript，污染下游
+- **配置级安静失败**：没绑定 `plugins.slots.contextEngine` 时，引擎安装但永不被使用——没有 L7 的健康监控，可能 40 天才发现
+- **secrets 经摘要 FTS 放大**：API key / token 进 summaries 表后被 lcm_grep 命中、被 vector index 收录、被下次 context assembly 再次注入 prompt
 
 ---
 
@@ -221,14 +231,18 @@ memory/
 - Dreaming 不是简单的"把所有东西都记住"，而是有选择地晋升
 - Promotion threshold：只有高价值内容才会从短期进入长期
 - 噪声清理是 Dreaming 的必要后置步骤
+- **L7 还要监控 L6 引擎本身**：context engine 是个安静失败的组件（不写入即等于沉默）。L7 应当包含一个周度健康监控 cron，监控 lcm.db 增长、DAG leaf/condensed 比例、WAL 状态。否则一次配置回归可能要 40 天才被发现
 
 **工程 Insight**：
 > Dreaming 会把 heartbeat、maintenance、compaction 通知等系统噪声纳入候选。因此需要 post-sweep watchdog：每天 Dreaming 完成后自动清理噪声、统计 promotion ratio、报告异常。典型数据：每天清理 200+ 行噪声，promotion 率约 4-6%。
+
+> 健康监控阈值要分级——🔴 才告警（ingest 沉默 / lcm 停摆 / WAL 损坏），🟡 只写报告不打扰（DAG 浅 / WAL 滞后），🟢 静默通过。否则告警疲劳会让真问题被淹没。
 
 **常见坑**：
 - 后台任务成功但报告投递失败，无人知道结果
 - 噪声进入 corpus 后被长期污染
 - Promotion threshold 太宽，低价值内容晋升
+- 健康监控空缺：context engine 等"安静失败"组件如果不被周期性 sanity-check，回归发现窗口可能从"1 周"变成"40 天"
 
 ---
 
@@ -249,11 +263,16 @@ memory/self-improving/
 - 错误记录 → 信号积累 → 规则晋升：不是一次犯错就改规则，而是重复出现才晋升
 - shared-rules 跨 Agent 共享：一个 Agent 的教训，所有 Agent 受益
 - 有 reviewer 和 threshold，防止规则膨胀
+- **agent identity 用唯一规范**：自我迭代目录用 agent id（`main` / `lisa` / ...），不用 persona name（`Lolita` / `Lisa🏍`）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping
+- **cron payload 用绝对路径**：周期性自反思任务里写 `memory/self-improving/X/hot.md` 这种相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用 `/root/.openclaw/workspace/memory/self-improving/<id>/...` 的绝对路径
+- **patrol 用枚举白名单**：`KNOWN_AGENTS` + `KNOWN_FILES` 列表化，扫到不在白名单的就报警。这能在第 1 周内发现命名漂移、拼写错误（如 `corrrections.md` 多打一个 r）、persona vs agent-id 大小写分裂
 
 **常见坑**：
 - 把一次性偏好过早晋升为全局规则
 - 没有 deprecation 机制，过时规则永远存在
 - 目录命名不一致，导致扫描漏项
+- persona name vs agent id 双轨命名不统一，cron 跟 patrol 各走各的写出多份目录
+- cron payload 用相对路径，cwd 一漂全军覆没
 
 ---
 
@@ -328,6 +347,53 @@ L9 技能进化（workflow → skill）
 - 启用 Skill Evolution
 
 每个阶段都可以独立运行。但完整的九层塔才能形成真正的闭环。
+
+---
+
+## 源码层的小修整：把开源组件做成"工程资产"
+
+诚实地说，把九层塔落到生产时，光配置是不够的。有两处会需要在开源组件源码上做小幅适配：
+
+- **L4 语义检索**：检索 CLI 的输出 JSON parser 在某些边界情况会输出非 JSON 前缀（"Warning: ...", "Usage: ..."），需要让 parser 改成 fail-soft（warn + 返回 []，而不是 throw）。否则一个 collection 的偶发噪声会把整条多 collection 检索拖到慢 fallback。
+- **L6 无损压缩引擎**：摘要 LLM 调用前注入 secret redaction（regex 替换 `sk-XXX` / Bearer / bot token 等），并对短源（< 200 tokens）跳过 LLM 调用。前者防 secrets 经摘要被 FTS 放大，后者避免"摘要比源还长"的反向膨胀。
+
+这种"小修小补"如果作为临时 hotfix 处理，会随着 npm 升级或上游 git pull 失效；做成可观测、可重启自愈的工程资产，才能真正成为架构的一部分。最佳实践是：
+
+| 要素 | 做法 |
+|---|---|
+| sentinel | 在 patched 区域留 `// PATCH:<name>` 注释，apply 脚本据此判断幂等 |
+| apply script | 单一 idempotent shell/node 脚本，能反复跑 |
+| boot 集成 | gateway 启动时 `ExecStartPre` 自动跑 apply 脚本——上游覆盖目标后下次重启自动重打 |
+| backup 文件 | apply 前 timestamp 备份，rollback 路径明确 |
+| descriptor 入版控 | `.patch` 文件（unified diff + 解释）入 git，编译产物 gitignore |
+| fail-closed | sentinel anchor 找不到（上游改了函数体）就 fail，主流程容错继续，日志留 trace |
+
+让对开源组件的小修整可被持续维护，而不是"换台机器就丢"。
+
+---
+
+## 运维真心话：14 个最容易踩的坑
+
+九层塔架构清单容易看，但落地时会反复踩一些坑。以下是从实际运行里整理出的高频陷阱，按层归类：
+
+| # | 坑 | 出现层 | 一句话提醒 |
+|---|---|---|---|
+| 1 | bootstrap 注入文件超阈值被截断 | L1/L2/L3 | MEMORY.md 严格限制为"规则 + 索引"，自动 promotion 内容拆出去 |
+| 2 | embedding 覆盖率 ≠ 索引完成率 | L4 | "files indexed" 是文件级，"embedded chunks" 是向量级，两者可以差几个数量级 |
+| 3 | 检索 CLI stdout 非 JSON 噪声 | L4 | qmd 类 CLI 在 collection 异常时往 stdout 写 warning，下游 parser 必须 fail-soft |
+| 4 | 多 collection 路径单点失败传染 | L4/L5 | 一个 collection 的子查询抛错不应让整条 active-memory 退化到 builtin |
+| 5 | active-memory 注入低质量摘要 | L5 | 加 minRelevanceScore + 模板化 fallback 过滤 + untrusted context 标记 |
+| 6 | **context engine slot 没绑定 = 安静失败** | L6 | `plugins.slots.contextEngine` 缺失时系统不报错，只是 lcm.db 永不增长——必须有 L7 健康监控 |
+| 7 | **LLM 摘要把 secrets 经 FTS 放大** | L6 | 摘要器原样保留 sk-XXX / token，进 summaries 后 lcm_grep 命中、vector embedding 收录、下次组装再注入 prompt——**必须在调 LLM 前 redact** |
+| 8 | 短源做 summary 反而变长 | L6 | 源 < 200 tokens 直接 return 原文，避免"摘要 = timestamp + 原文"的反向膨胀 |
+| 9 | session 内部消息（cron/subagent）污染 corpus | L6/L7 | `ignoreSessionPatterns` 在源头排除，比在 Dreaming 后清理高效 |
+| 10 | post-sweep watchdog 投递失败 → 无人知 | L7 | watchdog 自身也要监控；delivery 失败要降级到 local log + 告警 |
+| 11 | persona 名 vs agent id 双轨写入造成目录分裂 | L8 | 全局只用 agent id（main/lisa/...）；persona name 不进文件系统 |
+| 12 | cron payload 用相对路径在不同 cwd 下落到不同 workspace | L8 | 自反思 cron 一律用绝对路径 |
+| 13 | per-agent 索引累积 orphan 向量 | L4 | 周期性 cleanup，否则 sqlite 体积膨胀（实测可达 80%+ 都是 orphan） |
+| 14 | sudoers 文件名带 `.` 被默认忽略 | 运维 | `/etc/sudoers.d/X.tmp` 不生效；要用 `X` 不带后缀 |
+
+其中 #6 和 #7 是这套架构最容易"安静吃亏"的两点：context engine 不绑 slot，整个 L6 等于没装；摘要器没做 secrets redaction，secrets 会经 FTS 持续放大。这两条强烈建议在搭建 L6 时就一次到位。
 
 ---
 
