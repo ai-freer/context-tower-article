@@ -52,6 +52,20 @@
 |---|---|---|
 | 16 | `16-add-wiki-synthesis-cron.sh` | 加周日 22:00 lisa 跑的 wiki synthesis cron，把 wiki 从 archive 推向知识图谱 |
 
+### 第二轮（C-#6 / C-#3 / 衍生 P0 secrets leak）
+
+| # | 脚本 | 目的 |
+|---|---|---|
+| 17 | `17-add-lossless-claw-health-cron.sh` | 周一 09:30 lisa 跑：lcm.db 健康指标 + 退化告警（防 5/9 那次 40 天沉默复发） |
+| 18 | `18-redact-lcm-secrets.sh` | **P0 安全**：扫 lcm.db 找出 41+ 含 sk-/bot_token 的 leaf summaries，正则替换为 [REDACTED_*]，重建 summaries_fts |
+| 19 | `19-patch-lossless-claw-summarize.sh` | 改 lossless-claw `src/summarize.ts`：加 secret redaction 函数 + < 200 token 短源跳过 LLM；esbuild 重新打包 |
+| 20 | `20-restart-and-verify-redaction.sh` | 重启 gateway，验证 patched dist 加载、redactLcmSecrets 在 production 中 |
+| 21 | `21-commit-lossless-claw-patch.sh` | 调研 win4r/lossless-claw-enhanced repo 状态（不 push 上游，只本地保存）|
+
+**`_apply-qmd-defensive-parse.js`** 之外还有 **`_apply-lossless-claw-redact.sh`**
+（同样安装在 `~/workspace/patches/`），由 `apply-patches.sh` 在 gateway
+启动时调用，幂等。这俩 patch 一起构成 OpenClaw 修复体系的两个心脏。
+
 ## 关键 backup 路径
 
 | 修改类型 | backup 位置 |
