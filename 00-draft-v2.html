@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>上下文管理九层塔 · OpenClaw Agent 长期记忆与自我进化架构 (v2)</title>
+<meta name="description" content="一篇面向 OpenClaw 进阶用户与 AI Agent builder 的架构教程，介绍九层塔上下文管理体系的设计思想、关键实现与运维真心话。">
+<style>
+:root {
+  --fg: #1f2328;
+  --fg-muted: #57606a;
+  --fg-soft: #6e7781;
+  --bg: #fdfdfb;
+  --bg-soft: #f6f5f0;
+  --bg-code: #f3f1ea;
+  --border: #d8d2c4;
+  --border-soft: #ece8dc;
+  --accent: #b8431e;
+  --accent-soft: #f3d9cf;
+  --warn-bg: #fff7e6;
+  --warn-border: #f0c674;
+  --warn-fg: #7a4f0a;
+  --critical-bg: #fbe9e7;
+  --critical-border: #e57373;
+  --critical-fg: #8c1c1c;
+  --info-bg: #eaf3fb;
+  --info-border: #8db8e4;
+  --tower-foundation: #ddd5be;
+  --tower-runtime: #e8d8c0;
+  --tower-evolution: #efc7b1;
+  --content-max: 760px;
+  --aside-w: 240px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e6e1d6;
+    --fg-muted: #a8a395;
+    --fg-soft: #847f72;
+    --bg: #1a1a18;
+    --bg-soft: #232220;
+    --bg-code: #2a2825;
+    --border: #3d3a34;
+    --border-soft: #2e2c28;
+    --accent: #e07a52;
+    --accent-soft: #5a3526;
+    --warn-bg: #3d3220;
+    --warn-border: #8b6f2e;
+    --warn-fg: #f0c674;
+    --critical-bg: #3a221f;
+    --critical-border: #b85850;
+    --critical-fg: #f1a89e;
+    --info-bg: #1f2c39;
+    --info-border: #4d7da8;
+    --tower-foundation: #3a352a;
+    --tower-runtime: #4a3d2d;
+    --tower-evolution: #5a3d2c;
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: 0%;
+  background: var(--accent);
+  z-index: 1000;
+  transition: width 0.1s linear;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--aside-w) minmax(0, var(--content-max)) 1fr;
+  gap: 36px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+aside.toc {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+  height: calc(100vh - 48px);
+  overflow-y: auto;
+  font-size: 13px;
+  padding: 24px 8px 24px 0;
+  border-right: 1px solid var(--border-soft);
+}
+
+aside.toc h2 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  margin: 0 0 12px 0;
+}
+
+aside.toc ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+aside.toc li { margin: 0; padding: 0; }
+
+aside.toc a {
+  display: block;
+  padding: 4px 8px;
+  color: var(--fg-muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  margin-left: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+aside.toc a:hover { color: var(--accent); }
+
+aside.toc a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 500;
+}
+
+aside.toc .toc-group {
+  margin-bottom: 4px;
+  padding-top: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--fg-soft);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+main { padding: 64px 0 96px; }
+article { max-width: var(--content-max); }
+
+.meta {
+  font-size: 13px;
+  color: var(--fg-soft);
+  margin-bottom: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: 32px;
+  line-height: 1.3;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0 0 16px;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  font-weight: 400;
+  margin: 0 0 8px;
+  border-left: 3px solid var(--accent);
+  padding: 4px 0 4px 16px;
+}
+
+.byline {
+  font-size: 13px;
+  color: var(--fg-soft);
+  margin: 24px 0 48px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.byline strong { color: var(--fg-muted); font-weight: 500; }
+
+h2 {
+  font-size: 24px;
+  line-height: 1.35;
+  font-weight: 600;
+  margin: 56px 0 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+  scroll-margin-top: 24px;
+}
+
+h2:first-of-type { border-top: none; padding-top: 0; }
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 32px 0 12px;
+  scroll-margin-top: 24px;
+}
+
+h2 .layer-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-right: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+p { margin: 0 0 16px; }
+
+a {
+  color: var(--accent);
+  text-decoration-color: var(--accent-soft);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+ul, ol { margin: 0 0 16px; padding-left: 24px; }
+ul li, ol li { margin: 6px 0; }
+ul li::marker { color: var(--fg-soft); }
+
+strong { font-weight: 600; color: var(--fg); }
+em { color: var(--fg-muted); }
+
+code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.88em;
+  background: var(--bg-code);
+  padding: 1.5px 6px;
+  border-radius: 3px;
+  color: var(--fg);
+}
+
+pre {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13.5px;
+  line-height: 1.6;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  border-radius: 0;
+}
+
+blockquote {
+  margin: 20px 0;
+  padding: 12px 18px;
+  background: var(--info-bg);
+  border-left: 3px solid var(--info-border);
+  color: var(--fg);
+  border-radius: 0 6px 6px 0;
+  font-size: 15px;
+}
+
+blockquote p:last-child { margin-bottom: 0; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 20px 0;
+  font-size: 14.5px;
+}
+
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: top;
+}
+
+th {
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--bg-soft);
+  border-bottom: 2px solid var(--border);
+}
+
+tr:hover td { background: var(--bg-soft); }
+td:first-child { color: var(--fg-soft); white-space: nowrap; }
+
+hr { border: none; border-top: 1px solid var(--border-soft); margin: 48px 0; }
+
+.tower {
+  margin: 28px 0 36px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tower-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+}
+
+.tower-row:last-child { border-bottom: none; }
+
+.tower-row .layer {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.tower-row .layer-name { font-weight: 600; color: var(--fg); }
+.tower-row .layer-desc { color: var(--fg-muted); font-size: 13px; margin-top: 2px; }
+
+.tower-row.foundation { background: var(--tower-foundation); }
+.tower-row.runtime { background: var(--tower-runtime); }
+.tower-row.evolution { background: var(--tower-evolution); }
+
+li.pitfall {
+  background: var(--warn-bg);
+  border-left: 3px solid var(--warn-border);
+  padding: 8px 14px;
+  margin: 8px 0 8px -14px;
+  list-style: none;
+  border-radius: 0 4px 4px 0;
+  color: var(--warn-fg);
+}
+
+li.pitfall::before {
+  content: "⚠️ ";
+  margin-right: 4px;
+}
+
+li.critical {
+  background: var(--critical-bg);
+  border-left: 3px solid var(--critical-border);
+  padding: 8px 14px;
+  margin: 8px 0 8px -14px;
+  list-style: none;
+  border-radius: 0 4px 4px 0;
+  color: var(--critical-fg);
+}
+
+li.critical::before {
+  content: "🚨 ";
+  margin-right: 4px;
+}
+
+.pitfalls-table td:nth-child(1) {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.pitfalls-table tr.high td { background: var(--critical-bg); }
+.pitfalls-table tr.high:hover td { background: var(--critical-bg); filter: brightness(0.97); }
+.pitfalls-table tr.high td:nth-child(2),
+.pitfalls-table tr.high td:nth-child(4) { color: var(--critical-fg); }
+
+.pitfalls-table td:nth-child(3) {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}
+
+.phases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.phase {
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 16px 18px;
+  background: var(--bg-soft);
+}
+
+.phase h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.phase ul { font-size: 14px; margin: 0; padding-left: 20px; }
+.phase ul li { margin: 3px 0; }
+
+footer {
+  margin-top: 80px;
+  padding: 32px 0;
+  border-top: 1px solid var(--border-soft);
+  font-size: 13px;
+  color: var(--fg-soft);
+  font-style: italic;
+}
+
+.toc-toggle {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 100;
+}
+
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  aside.toc {
+    position: fixed;
+    top: 0; right: -100%;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg);
+    border-right: none;
+    border-left: 1px solid var(--border);
+    box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+    transition: right 0.25s ease;
+    z-index: 99;
+    padding: 24px;
+  }
+  aside.toc.open { right: 0; }
+  .toc-toggle { display: flex; align-items: center; justify-content: center; }
+  main { padding: 32px 0 96px; }
+  h1 { font-size: 26px; }
+  h2 { font-size: 21px; margin-top: 40px; }
+}
+
+@media (max-width: 600px) {
+  body { font-size: 15px; }
+  .layout { padding: 0 18px; }
+  pre { font-size: 12.5px; padding: 12px 14px; }
+  table { font-size: 13px; }
+  th, td { padding: 8px 10px; }
+  .pitfalls-table td:nth-child(3) { font-size: 11px; }
+  .tower-row { grid-template-columns: 48px 1fr; padding: 12px 16px; }
+}
+
+@media print {
+  aside.toc, .toc-toggle, #progress { display: none; }
+  .layout { grid-template-columns: 1fr; padding: 0; }
+  main { padding: 0; }
+  body { font-size: 11pt; }
+  h2 { page-break-before: always; }
+  h2:first-of-type { page-break-before: auto; }
+  pre, table, blockquote { page-break-inside: avoid; }
+}
+
+.anchor {
+  color: var(--fg-soft);
+  margin-left: 6px;
+  opacity: 0;
+  text-decoration: none;
+  font-weight: normal;
+  transition: opacity 0.15s;
+  font-size: 0.7em;
+}
+
+h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
+.anchor:hover { opacity: 1 !important; }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<button class="toc-toggle" id="tocToggle" aria-label="Toggle table of contents">☰</button>
+
+<div class="layout">
+
+<aside class="toc" id="toc">
+<h2>目录</h2>
+<div class="toc-group">导言</div>
+<ol>
+<li><a href="#intro">引言：大窗口的幻觉</a></li>
+<li><a href="#three-to-nine">从三层到九层</a></li>
+<li><a href="#overview">九层塔总览</a></li>
+</ol>
+<div class="toc-group">基础层</div>
+<ol>
+<li><a href="#l1">L1 身份注入层</a></li>
+<li><a href="#l2">L2 规则治理层</a></li>
+<li><a href="#l3">L3 文件记忆层</a></li>
+</ol>
+<div class="toc-group">运行时层</div>
+<ol>
+<li><a href="#l4">L4 语义检索层</a></li>
+<li><a href="#l5">L5 主动召回层</a></li>
+<li><a href="#l6">L6 会话生存层</a></li>
+</ol>
+<div class="toc-group">进化层</div>
+<ol>
+<li><a href="#l7">L7 后台整理层</a></li>
+<li><a href="#l8">L8 自我迭代层</a></li>
+<li><a href="#l9">L9 能力进化层</a></li>
+</ol>
+<div class="toc-group">实践</div>
+<ol>
+<li><a href="#dataflow">九层之间的数据流</a></li>
+<li><a href="#path">搭建路径建议</a></li>
+<li><a href="#patches">源码层的小修整</a></li>
+<li><a href="#pitfalls">运维真心话：14 个坑</a></li>
+<li><a href="#conclusion">结语</a></li>
+</ol>
+</aside>
+
+<main>
+<article>
+
+<div class="meta">v2 · 2026-05-10 · OpenClaw Context Engineering</div>
+
+<h1>上下文管理九层塔<br><span style="font-weight: 400; font-size: 22px; color: var(--fg-muted)">OpenClaw Agent 的长期记忆、主动召回与自我进化架构</span></h1>
+
+<p class="subtitle">一个真正长期运行的 AI Agent，需要的不是更大的上下文窗口，而是一套完整的上下文治理体系。</p>
+
+<div class="byline">
+基于 OpenClaw 多 Agent 环境中近一个月的实际运行经验。九层塔不是一次性设计出来的，而是在解决一个又一个实际问题的过程中逐步演化而成。<strong>运维治理本身也是架构成熟的一部分。</strong>
+</div>
+
+<h2 id="intro">引言：大窗口的幻觉<a class="anchor" href="#intro">#</a></h2>
+
+<p>上下文窗口从 4K 到 128K 再到 1M+，很多人以为"窗口够大就不需要记忆管理了"。</p>
+<p>这是一个危险的幻觉。</p>
+<p>窗口变大解决的是"能放多少"，但没有解决：</p>
+<ul>
+<li>放什么进去？</li>
+<li>什么时候放？</li>
+<li>过期的怎么清？</li>
+<li>跨会话怎么延续？</li>
+<li>多 Agent 怎么共享又隔离？</li>
+<li>错误记忆怎么修正？</li>
+<li>经验怎么沉淀成能力？</li>
+</ul>
+<p>这些问题，不是靠"更大的窗口"能解决的。它们需要的是 <strong>Context Engineering</strong>——对上下文的工程化治理。</p>
+<p>本文介绍一套经过近一个月迭代、在 OpenClaw 多 Agent 环境中实际运行的上下文管理架构。我们称之为"九层塔"。</p>
+
+<h2 id="three-to-nine">从三层到九层：为什么简单记忆不够<a class="anchor" href="#three-to-nine">#</a></h2>
+
+<p>最基础的记忆架构分三层：</p>
+<ul>
+<li><strong>Layer 0</strong>：身份与规范（静态，低频修改）</li>
+<li><strong>Layer 1</strong>：知识积累与检索（持续增长）</li>
+<li><strong>Layer 2</strong>：驱动行动（实时运转）</li>
+</ul>
+<p>三层架构能让 Agent "记住东西"。但当你开始长期运行——跨天、跨周、多会话、多 Agent 协作——你会发现三层不够：</p>
+<ol>
+<li><strong>记忆膨胀</strong>：文件越来越多，bootstrap 注入被截断</li>
+<li><strong>噪声累积</strong>：系统日志、heartbeat、maintenance 消息混入记忆</li>
+<li><strong>召回失败</strong>：记了但找不到，或找到的不是最相关的</li>
+<li><strong>压缩丢失</strong>：长会话被 compaction 后，关键决策丢了</li>
+<li><strong>重复劳动</strong>：同样的任务做了十次，每次从零开始</li>
+</ol>
+<p>九层塔就是为了解决这些问题而逐步演化出来的。</p>
+
+<h2 id="overview">九层塔总览<a class="anchor" href="#overview">#</a></h2>
+
+<div class="tower">
+<div class="tower-row evolution"><div class="layer">L9</div><div><div class="layer-name">能力进化层</div><div class="layer-desc">经验 → 可复用技能</div></div></div>
+<div class="tower-row evolution"><div class="layer">L8</div><div><div class="layer-name">自我迭代层</div><div class="layer-desc">错误 / 反馈 → 行为规则</div></div></div>
+<div class="tower-row evolution"><div class="layer">L7</div><div><div class="layer-name">后台整理层</div><div class="layer-desc">短期上下文 → 长期记忆</div></div></div>
+<div class="tower-row runtime"><div class="layer">L6</div><div><div class="layer-name">会话生存层</div><div class="layer-desc">Lossless Context Engine / compaction / flush</div></div></div>
+<div class="tower-row runtime"><div class="layer">L5</div><div><div class="layer-name">主动召回层</div><div class="layer-desc">消息前自动注入相关上下文</div></div></div>
+<div class="tower-row runtime"><div class="layer">L4</div><div><div class="layer-name">语义检索层</div><div class="layer-desc">embedding / search / fallback</div></div></div>
+<div class="tower-row foundation"><div class="layer">L3</div><div><div class="layer-name">文件记忆层</div><div class="layer-desc">Markdown 长期事实</div></div></div>
+<div class="tower-row foundation"><div class="layer">L2</div><div><div class="layer-name">规则治理层</div><div class="layer-desc">行为边界 / 工具协议</div></div></div>
+<div class="tower-row foundation"><div class="layer">L1</div><div><div class="layer-name">身份注入层</div><div class="layer-desc">身份 / 用户 / persona</div></div></div>
+</div>
+
+<p>三组，每组三层：</p>
+<ul>
+<li><strong>基础层（L1-L3）</strong>：定义 Agent 是谁、该怎么做、记住了什么</li>
+<li><strong>运行时层（L4-L6）</strong>：让记忆在对话中真正发挥作用</li>
+<li><strong>进化层（L7-L9）</strong>：让系统随时间变得更好</li>
+</ul>
+
+<h2 id="l1"><span class="layer-tag">L1</span>身份注入层：Agent 是谁<a class="anchor" href="#l1">#</a></h2>
+
+<p><strong>解决的问题</strong>：Agent 需要一个稳定的身份锚点，否则在长对话或多 Agent 场景中会"人格漂移"。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+<ul>
+<li><code>SOUL.md</code> — 定义人格、语气、行为边界</li>
+<li><code>IDENTITY.md</code> — 基本信息：名字、角色、emoji</li>
+<li><code>USER.md</code> — 用户画像：偏好、沟通风格、技术栈</li>
+</ul>
+
+<p><strong>关键设计</strong>：这些文件在每次 session 启动时自动注入 context window，不依赖 Agent 主动读取。</p>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">身份文件写得太长，挤占有效上下文空间</li>
+<li class="pitfall">多 Agent 场景中，从 chat history 推断身份而非从配置文件确认</li>
+<li class="pitfall">persona 写得太强，压过任务目标</li>
+</ul>
+
+<h2 id="l2"><span class="layer-tag">L2</span>规则治理层：Agent 该怎么行动<a class="anchor" href="#l2">#</a></h2>
+
+<p><strong>解决的问题</strong>：Agent 需要明确的操作边界——什么能做、什么不能做、怎么做。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+<ul>
+<li><code>AGENTS.md</code> — 操作手册：读写边界、协作协议、安全规则</li>
+<li><code>TOOLS.md</code> — 工具使用规范：什么场景用什么工具</li>
+<li>Bootstrap 配置 — 启动时的行为指令</li>
+</ul>
+
+<p><strong>关键设计</strong>：规则分层——身份规则 &gt; 安全规则 &gt; 任务协议 &gt; 工具偏好。优先级明确，冲突时高优先级覆盖。</p>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">规则堆太多，Agent 遵循率下降</li>
+<li class="pitfall">规则没有分层，任务协议和人格描述混在一起</li>
+<li class="pitfall">缺少"完成后必须汇报 / 落盘"的闭环要求</li>
+</ul>
+
+<h2 id="l3"><span class="layer-tag">L3</span>文件记忆层：长期事实载体<a class="anchor" href="#l3">#</a></h2>
+
+<p><strong>解决的问题</strong>：Agent 需要一个持久化的、可人工修正的知识库。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+
+<pre><code>memory/
+  shared/        ← 所有 Agent 可读写：项目、偏好、决策
+  daily/         ← 每日共享日志
+  private/       ← 各 Agent 私有记忆
+  self-improving/ ← 行为改进记录</code></pre>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li>Markdown 格式：可读、可 diff、可版本控制、可人工修正</li>
+<li>shared / private 分区：多 Agent 协作时既共享又隔离</li>
+<li>写入规则明确：什么信息写哪里，由 AGENTS.md 定义</li>
+</ul>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">MEMORY.md 变成垃圾桶，什么都往里塞，导致 bootstrap 截断</li>
+<li class="pitfall">shared 区被某个 Agent 意外覆盖</li>
+<li class="pitfall">短期日志和长期事实混在一起，信噪比下降</li>
+</ul>
+
+<h2 id="l4"><span class="layer-tag">L4</span>语义检索层：从记忆中找上下文<a class="anchor" href="#l4">#</a></h2>
+
+<p><strong>解决的问题</strong>：记忆文件越来越多，不可能全部塞进 prompt。需要按需召回。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+<ul>
+<li>向量索引（embedding）+ 混合搜索（BM25 + semantic）</li>
+<li>多源检索：memory 文件 + session transcript</li>
+<li>Fallback 机制：primary backend 超时时降级到 builtin index</li>
+</ul>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li>不只是"向量相似度"，还有 temporal decay（时间衰减）和 MMR（多样性）</li>
+<li>索引定期更新（扫描 + embedding）</li>
+<li>搜索结果有质量阈值，不是"找到就注入"</li>
+</ul>
+
+<p><strong>工程 Insight</strong>：</p>
+<blockquote>
+搜索 timeout 从 15s 提到 60s 只解决了配置层问题。真正的瓶颈在 query expansion + LLM rerank 路径。搜索系统需要区分：索引是否更新、embedding 是否覆盖、query path 是否稳定、ranking 是否符合预期。
+</blockquote>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">只看"文件已索引"，忽略 embedding 覆盖率</li>
+<li class="pitfall">Fallback 静默工作，掩盖 primary backend 的性能问题</li>
+<li class="pitfall">exact query 被日志文件排在源文件前面（rerank 偏差）</li>
+<li class="critical">检索 CLI 的 stdout 不是干净 JSON——遇到 collection 不存在 / 参数异常时会先打印 <code>Warning:</code> 或 <code>Usage:</code> 文本再给 JSON。下游 parser 必须容错地跳过非 JSON 前缀，<strong>抛错会让多 collection 路径整体退化到慢 fallback</strong></li>
+<li class="pitfall">per-agent 索引会累积大量 orphan 向量（content 已删但 vector 留着），需要周期性 cleanup；orphan 占比 &gt; 50% 是 sqlite 体积膨胀的常见原因</li>
+</ul>
+
+<h2 id="l5"><span class="layer-tag">L5</span>主动召回层：消息前自动带上下文<a class="anchor" href="#l5">#</a></h2>
+
+<p><strong>解决的问题</strong>：用户不应该每次都说"帮我查一下记忆"。系统应该自动判断需要什么上下文。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+<ul>
+<li>Active Memory 插件：在用户消息进入 Agent 前，自动搜索相关记忆</li>
+<li>将召回结果压缩为短摘要注入 prompt</li>
+<li>结果标记为 untrusted context（不作为绝对事实）</li>
+</ul>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li>主动召回 ≠ 无脑注入。有质量阈值、空结果过滤、相关性判断</li>
+<li>注入内容明确标记来源，Agent 可以选择忽略</li>
+<li>对慢 query 可以选择更轻的搜索模式</li>
+</ul>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">低质量摘要污染当前对话</li>
+<li class="pitfall">Active memory 输出被误当作 trusted fact</li>
+<li class="pitfall">召回 subagent timeout 太短，导致频繁空结果</li>
+<li class="critical"><strong>检索后端单点失败传染整条召回链</strong>：active memory 调底层多 collection 检索时，任一子查询抛错会让整条召回退化到 builtin slow path（&gt;10s / 0 hits）。L4 parser 必须 fail-soft（warn + 返回空数组），主动召回层才能稳定</li>
+</ul>
+
+<h2 id="l6"><span class="layer-tag">L6</span>会话生存层：长会话不丢上下文<a class="anchor" href="#l6">#</a></h2>
+
+<p><strong>解决的问题</strong>：长对话会超过模型上下文窗口。只靠简单截断或一次性 compaction，会让早期约定、任务状态和关键决策从当前对话里消失。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+<ul>
+<li>Lossless Context Engine（lossless-claw）：作为 <code>plugins.slots.contextEngine</code> 的运行时上下文引擎，实时摄入消息，并用 DAG / 摘要 / 分层压缩来组装下一轮模型上下文</li>
+<li>Session Memory hook：实时保存会话 transcript，保留可审计的原始时间线</li>
+<li>Compaction Memory Flush：压缩前自动将重要信息写入 durable memory，作为最后一道持久化防线</li>
+<li>Session transcript 被索引，可供 L4 语义检索和后续 Dreaming 使用</li>
+</ul>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li>不依赖"大窗口就不会压缩"——任何窗口都有极限</li>
+<li>L6 的中心不是单纯 flush，而是"运行时上下文生存"：谁负责摄入、压缩、组装当前会话</li>
+<li>memoryFlush / safeguard compaction 是 fallback safety rail，不是替代 context engine 的主机制</li>
+<li>长任务应该外化 plan 到文件，而不是只存在 context 里</li>
+<li class="critical"><strong>必须显式绑定 contextEngine slot</strong>：<code>plugins.slots.contextEngine</code> 不配置时，系统不会报错，只是悄悄回退到 legacy 截断引擎。这是个安静失败模式——文件 size 不增长、WAL 不写入是排查信号</li>
+<li class="critical"><strong>LLM 摘要前必须 redact secrets</strong>：摘要器（doubao / lite 类小模型）原样保留源消息里的 API key / bot token。这些 secrets 一旦被写入 summary，会进入 FTS 索引、被 vector embedding 收录，并在下次组装 context 时再次被注入新 prompt——形成持续放大。最佳实践是在调 LLM <strong>之前</strong>做 regex redaction</li>
+<li class="pitfall"><strong>短源跳过 LLM</strong>：源 &lt; 200 tokens 直接 store-as-is，不调 summarizer。否则会出现"摘要 = timestamp 包装 + 原文"的反向膨胀，既浪费 LLM 调用又虚耗 token</li>
+</ul>
+
+<p><strong>工程 Insight</strong>：</p>
+
+<blockquote>
+一个成熟 Agent 需要"会话生存层"，而不只是更大的上下文窗口。检索层回答"该找回什么长期记忆"，context engine 回答"当前这条长会话怎样继续保持连贯"。两者互补，不互相替代。
+</blockquote>
+
+<blockquote>
+compaction / heartbeat / system prompt 被写入 transcript 后，可能被后台整理层（L7）错误晋升为长期记忆。会话生存层和后台整理层之间需要噪声过滤机制。
+</blockquote>
+
+<blockquote>
+Secrets 在 raw 消息里容易识别（grep 一抓一个准），但 LLM 摘要把它换个上下文重新表述后，固定的 grep 规则就不一定 catch 得到了。在源头 redact 比事后 audit 容易得多——这是 L6 必须正视的安全责任。
+</blockquote>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">只依赖大窗口模型，不做显式 context engine / 持久化治理</li>
+<li class="pitfall">把 memoryFlush 当成主机制，而不是 fallback safety rail</li>
+<li class="pitfall">长任务没有外化 plan，压缩后目标漂移</li>
+<li class="pitfall">系统消息混入 transcript，污染下游</li>
+<li class="critical"><strong>配置级安静失败</strong>：没绑定 <code>plugins.slots.contextEngine</code> 时，引擎安装但永不被使用——没有 L7 的健康监控，可能 40 天才发现</li>
+<li class="critical"><strong>secrets 经摘要 FTS 放大</strong>：API key / token 进 summaries 表后被 lcm_grep 命中、被 vector index 收录、被下次 context assembly 再次注入 prompt</li>
+</ul>
+
+<h2 id="l7"><span class="layer-tag">L7</span>后台整理层：Dreaming 消化上下文<a class="anchor" href="#l7">#</a></h2>
+
+<p><strong>解决的问题</strong>：短期记忆和 session transcript 会无限增长。需要定期整理、去重、提炼。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+<ul>
+<li>Memory Core Dreaming：每日自动运行
+  <ul>
+  <li>Deep sleep：修复 recall store</li>
+  <li>Light sleep：从 session corpus 中提炼候选记忆</li>
+  <li>REM：生成摘要和关联</li>
+  </ul>
+</li>
+<li>Post-sweep watchdog：检查 Dreaming 产物、清理噪声、统计健康指标</li>
+</ul>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li>Dreaming 不是简单的"把所有东西都记住"，而是有选择地晋升</li>
+<li>Promotion threshold：只有高价值内容才会从短期进入长期</li>
+<li>噪声清理是 Dreaming 的必要后置步骤</li>
+<li class="critical"><strong>L7 还要监控 L6 引擎本身</strong>：context engine 是个安静失败的组件（不写入即等于沉默）。L7 应当包含一个周度健康监控 cron，监控 lcm.db 增长、DAG leaf / condensed 比例、WAL 状态。否则一次配置回归可能要 40 天才被发现</li>
+</ul>
+
+<p><strong>工程 Insight</strong>：</p>
+
+<blockquote>
+Dreaming 会把 heartbeat、maintenance、compaction 通知等系统噪声纳入候选。因此需要 post-sweep watchdog：每天 Dreaming 完成后自动清理噪声、统计 promotion ratio、报告异常。典型数据：每天清理 200+ 行噪声，promotion 率约 4-6%。
+</blockquote>
+
+<blockquote>
+健康监控阈值要分级——🔴 才告警（ingest 沉默 / lcm 停摆 / WAL 损坏），🟡 只写报告不打扰（DAG 浅 / WAL 滞后），🟢 静默通过。否则告警疲劳会让真问题被淹没。
+</blockquote>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">后台任务成功但报告投递失败，无人知道结果</li>
+<li class="pitfall">噪声进入 corpus 后被长期污染</li>
+<li class="pitfall">Promotion threshold 太宽，低价值内容晋升</li>
+<li class="critical">健康监控空缺：context engine 等"安静失败"组件如果不被周期性 sanity-check，回归发现窗口可能从"1 周"变成"40 天"</li>
+</ul>
+
+<h2 id="l8"><span class="layer-tag">L8</span>自我迭代层：从错误中改进行为<a class="anchor" href="#l8">#</a></h2>
+
+<p><strong>解决的问题</strong>：Agent 会犯错。同样的错误不应该犯第二次。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+
+<pre><code>memory/self-improving/
+  hot/           ← 当前活跃的行为信号
+  corrections/   ← 被纠正的错误记录
+  signals/       ← 观察到的行为模式
+  shared-rules/  ← 晋升为稳定规则的条目</code></pre>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li>错误记录 → 信号积累 → 规则晋升：不是一次犯错就改规则，而是重复出现才晋升</li>
+<li>shared-rules 跨 Agent 共享：一个 Agent 的教训，所有 Agent 受益</li>
+<li>有 reviewer 和 threshold，防止规则膨胀</li>
+<li class="critical"><strong>agent identity 用唯一规范</strong>：自我迭代目录用 agent id（<code>main</code> / <code>lisa</code> / ...），不用 persona name（<code>Lolita</code> / <code>Lisa🏍</code>）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping</li>
+<li class="critical"><strong>cron payload 用绝对路径</strong>：周期性自反思任务里写 <code>memory/self-improving/X/hot.md</code> 这种相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用 <code>/root/.openclaw/workspace/memory/self-improving/&lt;id&gt;/...</code> 的绝对路径</li>
+<li><strong>patrol 用枚举白名单</strong>：<code>KNOWN_AGENTS</code> + <code>KNOWN_FILES</code> 列表化，扫到不在白名单的就报警。这能在第 1 周内发现命名漂移、拼写错误（如 <code>corrrections.md</code> 多打一个 r）、persona vs agent-id 大小写分裂</li>
+</ul>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">把一次性偏好过早晋升为全局规则</li>
+<li class="pitfall">没有 deprecation 机制，过时规则永远存在</li>
+<li class="pitfall">目录命名不一致，导致扫描漏项</li>
+<li class="pitfall">persona name vs agent id 双轨命名不统一，cron 跟 patrol 各走各的写出多份目录</li>
+<li class="pitfall">cron payload 用相对路径，cwd 一漂全军覆没</li>
+</ul>
+
+<h2 id="l9"><span class="layer-tag">L9</span>能力进化层：把经验变成技能<a class="anchor" href="#l9">#</a></h2>
+
+<p><strong>解决的问题</strong>：Agent 反复做同样的事情，每次从零开始。经验应该固化为可复用能力。</p>
+
+<p><strong>OpenClaw 中的实现</strong>：</p>
+<ul>
+<li>Skill Evolution：从历史任务中 harvest → synthesize → review → promote</li>
+<li>产出的 skill 存入 shared-skills 目录，所有 Agent 可调用</li>
+<li>定期审计：清理过窄、过时、重复的 skill</li>
+</ul>
+
+<p><strong>关键设计</strong>：</p>
+<ul>
+<li>技能不是手动写的，而是从实际任务中自动提炼</li>
+<li>有 review 环节：不是所有 workflow 都值得变成 skill</li>
+<li>技能有生命周期：创建 → 使用 → 验证 → 可能 deprecate</li>
+</ul>
+
+<p><strong>常见坑</strong>：</p>
+<ul>
+<li class="pitfall">技能过窄，只适用于特定场景</li>
+<li class="pitfall">命名差，其他 Agent 找不到</li>
+<li class="pitfall">私有上下文被错误抽象成 shared skill</li>
+</ul>
+
+<h2 id="dataflow">九层之间的数据流<a class="anchor" href="#dataflow">#</a></h2>
+
+<pre><code>用户消息
+  ↓
+L1 / L2 身份 + 规则（自动注入）
+  ↓
+L5 主动召回（自动搜索相关记忆）
+  ↓
+L4 语义检索（按需查找）
+  ↓
+Agent 回答 / 执行
+  ↓
+L6 会话生存（lossless-claw 组装当前上下文 + transcript / flush 兜底）
+  ↓
+L3 文件记忆（显式写入 durable memory）
+  ↓
+L7 Dreaming（每日整理、晋升）
+  ↓
+L8 自我迭代（纠错 → 规则）
+  ↓
+L9 技能进化（workflow → skill）
+  ↓
+下一轮对话继续使用</code></pre>
+
+<p>这不是线性流程，而是一个闭环。每一层的输出都是其他层的输入。</p>
+
+<h2 id="path">搭建路径建议<a class="anchor" href="#path">#</a></h2>
+
+<p>不需要一次性搭建九层。建议分阶段：</p>
+
+<div class="phases">
+<div class="phase">
+<h4>第一阶段：基础可用（L1-L3）</h4>
+<ul>
+<li>写好 SOUL.md、IDENTITY.md、USER.md</li>
+<li>建立 memory/ 目录结构</li>
+<li>定义 AGENTS.md 中的读写规则</li>
+</ul>
+</div>
+<div class="phase">
+<h4>第二阶段：检索与召回（L4-L6）</h4>
+<ul>
+<li>启用 memory search + embedding</li>
+<li>配置 Active Memory 插件</li>
+<li>启用 session memory 和 compaction flush</li>
+</ul>
+</div>
+<div class="phase">
+<h4>第三阶段：自动进化（L7-L9）</h4>
+<ul>
+<li>启用 Dreaming + post-sweep watchdog</li>
+<li>建立 self-improving 目录和晋升机制</li>
+<li>启用 Skill Evolution</li>
+</ul>
+</div>
+</div>
+
+<p>每个阶段都可以独立运行。但完整的九层塔才能形成真正的闭环。</p>
+
+<h2 id="patches">源码层的小修整：把开源组件做成"工程资产"<a class="anchor" href="#patches">#</a></h2>
+
+<p>诚实地说，把九层塔落到生产时，光配置是不够的。有两处会需要在开源组件源码上做小幅适配：</p>
+
+<ul>
+<li><strong>L4 语义检索</strong>：检索 CLI 的输出 JSON parser 在某些边界情况会输出非 JSON 前缀（"Warning: ..."、"Usage: ..."），需要让 parser 改成 fail-soft（warn + 返回 []，而不是 throw）。否则一个 collection 的偶发噪声会把整条多 collection 检索拖到慢 fallback。</li>
+<li><strong>L6 无损压缩引擎</strong>：摘要 LLM 调用前注入 secret redaction（regex 替换 <code>sk-XXX</code> / Bearer / bot token 等），并对短源（&lt; 200 tokens）跳过 LLM 调用。前者防 secrets 经摘要被 FTS 放大，后者避免"摘要比源还长"的反向膨胀。</li>
+</ul>
+
+<p>这种"小修小补"如果作为临时 hotfix 处理，会随着 npm 升级或上游 git pull 失效；做成可观测、可重启自愈的工程资产，才能真正成为架构的一部分。最佳实践是：</p>
+
+<table>
+<thead><tr><th>要素</th><th>做法</th></tr></thead>
+<tbody>
+<tr><td>sentinel</td><td>在 patched 区域留 <code>// PATCH:&lt;name&gt;</code> 注释，apply 脚本据此判断幂等</td></tr>
+<tr><td>apply script</td><td>单一 idempotent shell / node 脚本，能反复跑</td></tr>
+<tr><td>boot 集成</td><td>gateway 启动时 <code>ExecStartPre</code> 自动跑 apply 脚本——上游覆盖目标后下次重启自动重打</td></tr>
+<tr><td>backup 文件</td><td>apply 前 timestamp 备份，rollback 路径明确</td></tr>
+<tr><td>descriptor 入版控</td><td><code>.patch</code> 文件（unified diff + 解释）入 git，编译产物 gitignore</td></tr>
+<tr><td>fail-closed</td><td>sentinel anchor 找不到（上游改了函数体）就 fail，主流程容错继续，日志留 trace</td></tr>
+</tbody>
+</table>
+
+<p>让对开源组件的小修整可被持续维护，而不是"换台机器就丢"。</p>
+
+<h2 id="pitfalls">运维真心话：14 个最容易踩的坑<a class="anchor" href="#pitfalls">#</a></h2>
+
+<p>九层塔架构清单容易看，但落地时会反复踩一些坑。以下是从实际运行里整理出的高频陷阱，按层归类：</p>
+
+<table class="pitfalls-table">
+<thead>
+<tr><th>#</th><th>坑</th><th>出现层</th><th>一句话提醒</th></tr>
+</thead>
+<tbody>
+<tr><td>1</td><td>bootstrap 注入文件超阈值被截断</td><td>L1 / L2 / L3</td><td>MEMORY.md 严格限制为"规则 + 索引"，自动 promotion 内容拆出去</td></tr>
+<tr><td>2</td><td>embedding 覆盖率 ≠ 索引完成率</td><td>L4</td><td>"files indexed" 是文件级，"embedded chunks" 是向量级，两者可以差几个数量级</td></tr>
+<tr><td>3</td><td>检索 CLI stdout 非 JSON 噪声</td><td>L4</td><td>qmd 类 CLI 在 collection 异常时往 stdout 写 warning，下游 parser 必须 fail-soft</td></tr>
+<tr><td>4</td><td>多 collection 路径单点失败传染</td><td>L4 / L5</td><td>一个 collection 的子查询抛错不应让整条 active-memory 退化到 builtin</td></tr>
+<tr><td>5</td><td>active-memory 注入低质量摘要</td><td>L5</td><td>加 minRelevanceScore + 模板化 fallback 过滤 + untrusted context 标记</td></tr>
+<tr class="high"><td>6</td><td><strong>context engine slot 没绑定 = 安静失败</strong></td><td>L6</td><td><code>plugins.slots.contextEngine</code> 缺失时系统不报错，只是 lcm.db 永不增长——必须有 L7 健康监控</td></tr>
+<tr class="high"><td>7</td><td><strong>LLM 摘要把 secrets 经 FTS 放大</strong></td><td>L6</td><td>摘要器原样保留 sk-XXX / token，进 summaries 后 lcm_grep 命中、vector embedding 收录、下次组装再注入 prompt——<strong>必须在调 LLM 前 redact</strong></td></tr>
+<tr><td>8</td><td>短源做 summary 反而变长</td><td>L6</td><td>源 &lt; 200 tokens 直接 return 原文，避免"摘要 = timestamp + 原文"的反向膨胀</td></tr>
+<tr><td>9</td><td>session 内部消息（cron / subagent）污染 corpus</td><td>L6 / L7</td><td><code>ignoreSessionPatterns</code> 在源头排除，比在 Dreaming 后清理高效</td></tr>
+<tr><td>10</td><td>post-sweep watchdog 投递失败 → 无人知</td><td>L7</td><td>watchdog 自身也要监控；delivery 失败要降级到 local log + 告警</td></tr>
+<tr><td>11</td><td>persona 名 vs agent id 双轨写入造成目录分裂</td><td>L8</td><td>全局只用 agent id（main / lisa / ...）；persona name 不进文件系统</td></tr>
+<tr><td>12</td><td>cron payload 用相对路径在不同 cwd 下落到不同 workspace</td><td>L8</td><td>自反思 cron 一律用绝对路径</td></tr>
+<tr><td>13</td><td>per-agent 索引累积 orphan 向量</td><td>L4</td><td>周期性 cleanup，否则 sqlite 体积膨胀（实测可达 80%+ 都是 orphan）</td></tr>
+<tr><td>14</td><td>sudoers 文件名带 <code>.</code> 被默认忽略</td><td>运维</td><td><code>/etc/sudoers.d/X.tmp</code> 不生效；要用 <code>X</code> 不带后缀</td></tr>
+</tbody>
+</table>
+
+<p>其中 <strong>#6 和 #7</strong> 是这套架构最容易"安静吃亏"的两点：context engine 不绑 slot，整个 L6 等于没装；摘要器没做 secrets redaction，secrets 会经 FTS 持续放大。这两条强烈建议在搭建 L6 时就一次到位。</p>
+
+<h2 id="conclusion">结语<a class="anchor" href="#conclusion">#</a></h2>
+
+<p>九层塔不是为了复杂而复杂。它是因为长期运行的 Agent 面临的问题天然分布在九个不同维度：</p>
+
+<ul>
+<li>身份要稳定</li>
+<li>规则要明确</li>
+<li>记忆要持久</li>
+<li>检索要精准</li>
+<li>召回要主动</li>
+<li>会话要存活</li>
+<li>噪声要清理</li>
+<li>错误要修正</li>
+<li>经验要复用</li>
+</ul>
+
+<p>好的 Agent 不是"记得更多"，而是"知道什么该记、什么时候召回、何时压缩、如何清噪、怎样从经验中进化"。</p>
+
+<p style="font-size: 18px; font-weight: 500; padding: 20px 24px; background: var(--bg-soft); border-radius: 8px; border-left: 4px solid var(--accent); margin: 28px 0;">
+这就是 Context Engineering 的本质：不是管理上下文的大小，而是管理上下文的生命周期。
+</p>
+
+<footer>
+本文基于 OpenClaw 多 Agent 环境中近一个月的实际运行经验。九层塔不是一次性设计出来的，而是在解决一个又一个实际问题的过程中逐步演化而成。运维治理本身也是架构成熟的一部分。
+<br><br>
+<span style="font-style: normal; font-size: 12px; color: var(--fg-soft);">
+v2 · 2026-05-10 · 来源 <a href="https://github.com/ai-freer/context-tower-article" style="color: inherit;">ai-freer/context-tower-article</a>
+</span>
+</footer>
+
+</article>
+</main>
+
+</div>
+
+<script>
+const progress = document.getElementById('progress');
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY;
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  progress.style.width = max > 0 ? (scrolled / max * 100) + '%' : '0%';
+});
+
+const tocLinks = document.querySelectorAll('aside.toc a');
+const sections = Array.from(tocLinks).map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(link => link.classList.remove('active'));
+      const link = document.querySelector(`aside.toc a[href="#${entry.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+
+const toc = document.getElementById('toc');
+const tocToggle = document.getElementById('tocToggle');
+tocToggle.addEventListener('click', () => toc.classList.toggle('open'));
+tocLinks.forEach(link => link.addEventListener('click', () => toc.classList.remove('open')));
+</script>
+
+</body>
+</html>
