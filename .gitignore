@@ -5,3 +5,4 @@
 # Internal audit doc — process timeline with operational details
 # Not suitable for public consumption; backup at memory/shared/audits/
 00-audit.md
+.git.pre-filter-repo-*/

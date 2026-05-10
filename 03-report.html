@@ -418,18 +418,66 @@ footer {
 .toc-toggle {
   display: none;
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: white;
-  border: none;
+  top: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
   cursor: pointer;
-  font-size: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   z-index: 100;
+  padding: 0;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.toc-toggle:hover { background: var(--bg-soft); }
+.toc-toggle:active { transform: scale(0.95); }
+
+.toc-toggle .bars {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 18px;
+  height: 12px;
+}
+
+.toc-toggle .bars::before,
+.toc-toggle .bars::after,
+.toc-toggle .bars span {
+  content: "";
+  display: block;
+  height: 2px;
+  background: var(--fg);
+  border-radius: 1px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.toc-toggle.open .bars::before { transform: translateY(5px) rotate(45deg); }
+.toc-toggle.open .bars span { opacity: 0; }
+.toc-toggle.open .bars::after { transform: translateY(-5px) rotate(-45deg); }
+
+.toc-backdrop {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 98;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.toc-backdrop.open {
+  display: block;
+  opacity: 1;
+}
+
+@media (min-width: 1025px) {
+  .toc-backdrop, .toc-backdrop.open { display: none; }
 }
 
 @media (max-width: 1024px) {
@@ -437,18 +485,19 @@ footer {
   aside.toc {
     position: fixed;
     top: 0; right: -100%;
-    width: 280px;
+    width: 300px;
+    max-width: 85vw;
     height: 100vh;
     background: var(--bg);
     border-right: none;
     border-left: 1px solid var(--border);
-    box-shadow: -4px 0 24px rgba(0,0,0,0.08);
+    box-shadow: -8px 0 32px rgba(0,0,0,0.18);
     transition: right 0.25s ease;
     z-index: 99;
-    padding: 24px;
+    padding: 64px 24px 24px;
   }
   aside.toc.open { right: 0; }
-  .toc-toggle { display: flex; align-items: center; justify-content: center; }
+  .toc-toggle { display: inline-flex; }
   main { padding: 32px 0 96px; }
   h1 { font-size: 26px; }
   h2 { font-size: 21px; margin-top: 40px; }
@@ -465,7 +514,7 @@ footer {
 }
 
 @media print {
-  aside.toc, .toc-toggle, #progress { display: none; }
+  aside.toc, .toc-toggle, .toc-backdrop, #progress { display: none; }
   .layout { grid-template-columns: 1fr; padding: 0; }
   main { padding: 0; }
   body { font-size: 11pt; }
@@ -575,7 +624,10 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 </head>
 <body>
 <div id="progress"></div>
-<button class="toc-toggle" id="tocToggle" aria-label="Toggle table of contents">☰</button>
+<button class="toc-toggle" id="tocToggle" aria-label="目录" aria-expanded="false">
+  <span class="bars"><span></span></span>
+</button>
+<div class="toc-backdrop" id="tocBackdrop"></div>
 
 <div class="layout">
 
@@ -1162,8 +1214,20 @@ sections.forEach(s => observer.observe(s));
 
 const toc = document.getElementById('toc');
 const tocToggle = document.getElementById('tocToggle');
-tocToggle.addEventListener('click', () => toc.classList.toggle('open'));
-tocLinks.forEach(link => link.addEventListener('click', () => toc.classList.remove('open')));
+const tocBackdrop = document.getElementById('tocBackdrop');
+
+function setTocOpen(open) {
+  toc.classList.toggle('open', open);
+  tocToggle.classList.toggle('open', open);
+  tocBackdrop.classList.toggle('open', open);
+  tocToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
+tocToggle.addEventListener('click', () => setTocOpen(!toc.classList.contains('open')));
+tocBackdrop.addEventListener('click', () => setTocOpen(false));
+tocLinks.forEach(link => link.addEventListener('click', () => setTocOpen(false)));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && toc.classList.contains('open')) setTocOpen(false); });
 </script>
 
 </body>
