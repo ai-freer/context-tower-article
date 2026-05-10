@@ -418,48 +418,38 @@ footer {
 .toc-toggle {
   display: none;
   position: fixed;
-  top: 14px;
-  right: 14px;
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  background: var(--bg);
-  color: var(--fg);
-  border: 1px solid var(--border);
+  bottom: 24px;
+  right: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  border: none;
   cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18), 0 2px 4px rgba(0,0,0,0.12);
   z-index: 100;
   padding: 0;
-  transition: background 0.15s, transform 0.15s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.toc-toggle:hover { background: var(--bg-soft); }
-.toc-toggle:active { transform: scale(0.95); }
-
-.toc-toggle .bars {
-  display: inline-flex;
-  flex-direction: column;
-  justify-content: space-between;
-  width: 18px;
-  height: 12px;
+.toc-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.22), 0 3px 6px rgba(0,0,0,0.14);
 }
 
-.toc-toggle .bars::before,
-.toc-toggle .bars::after,
-.toc-toggle .bars span {
-  content: "";
-  display: block;
-  height: 2px;
-  background: var(--fg);
-  border-radius: 1px;
-  transition: transform 0.2s, opacity 0.2s;
+.toc-toggle:active { transform: scale(0.94); }
+
+.toc-toggle .icon {
+  display: inline-block;
+  transition: transform 0.25s ease;
 }
 
-.toc-toggle.open .bars::before { transform: translateY(5px) rotate(45deg); }
-.toc-toggle.open .bars span { opacity: 0; }
-.toc-toggle.open .bars::after { transform: translateY(-5px) rotate(-45deg); }
+.toc-toggle.open .icon { transform: rotate(90deg); }
 
 .toc-backdrop {
   display: none;
@@ -494,7 +484,7 @@ footer {
     box-shadow: -8px 0 32px rgba(0,0,0,0.18);
     transition: right 0.25s ease;
     z-index: 99;
-    padding: 64px 24px 24px;
+    padding: 24px;
   }
   aside.toc.open { right: 0; }
   .toc-toggle { display: inline-flex; }
@@ -959,7 +949,7 @@ a.tower-row:hover::after { opacity: 0.8; }
 <body>
 <div id="progress"></div>
 <button class="toc-toggle" id="tocToggle" aria-label="目录" aria-expanded="false">
-  <span class="bars"><span></span></span>
+  <span class="icon">☰</span>
 </button>
 <div class="toc-backdrop" id="tocBackdrop"></div>
 
