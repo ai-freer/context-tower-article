@@ -78,7 +78,7 @@ cat <<'EOF'
 4. 删除 lolita/corrrections.md/ (空目录)
 5. 删除 Lolita/ 整个目录 (内容已在 main 的 5/5 alias merge 里)
 6. 删除 lolita/ 整个目录 (内容已迁到 main/)
-7. 编辑 cron ae3745b9-a90b-4ef9-8f9b-d2faf49c5bb2 payload，把
+7. 编辑 cron <CRON_ID_MAIN> payload（self-improving-daily-reflection-lolita 那一条），把
    "memory/self-improving/lolita/" 改成 "memory/self-improving/main/"
 8. 验证 patrol 脚本 patrol.sh 期望的目录结构
 EOF

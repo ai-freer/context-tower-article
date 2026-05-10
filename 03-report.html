@@ -1002,7 +1002,7 @@ Dreaming 会把 heartbeat、maintenance、compaction 通知等系统噪声纳入
 <li>错误记录 → 信号积累 → 规则晋升：不是一次犯错就改规则，而是重复出现才晋升</li>
 <li>shared-rules 跨 Agent 共享：一个 Agent 的教训，所有 Agent 受益</li>
 <li>有 reviewer 和 threshold，防止规则膨胀</li>
-<li class="critical"><strong>agent identity 用唯一规范</strong>：自我迭代目录用 agent id（<code>main</code> / <code>lisa</code> / ...），不用 persona name（<code>Lolita</code> / <code>Lisa🏍</code>）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping</li>
+<li class="critical"><strong>agent identity 用唯一规范</strong>：自我迭代目录用 agent id（<code>main</code> / <code>lisa</code> / ...），不用 persona name（<code>Lolita</code> / <code>Lisa</code> 这类用户自定义显示名）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping</li>
 <li class="critical"><strong>cron payload 用绝对路径</strong>：周期性自反思任务里写 <code>memory/self-improving/X/hot.md</code> 这种相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用 <code>/root/.openclaw/workspace/memory/self-improving/&lt;id&gt;/...</code> 的绝对路径</li>
 <li><strong>patrol 用枚举白名单</strong>：<code>KNOWN_AGENTS</code> + <code>KNOWN_FILES</code> 列表化，扫到不在白名单的就报警。这能在第 1 周内发现命名漂移、拼写错误（如 <code>corrrections.md</code> 多打一个 r）、persona vs agent-id 大小写分裂</li>
 </ul>

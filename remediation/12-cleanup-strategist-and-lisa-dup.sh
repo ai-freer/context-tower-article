@@ -61,11 +61,13 @@ echo "✅ removed both"
 
 echo
 echo "--- D. 改 4 个 reflection cron 用绝对路径 ---"
+# 使用前请把下面 4 个 <CRON_ID_*> 替换为你环境里实际的 cron UUID
+# 通过 `openclaw cron list --json | jq -r '.[] | select(.name | startswith("self-improving-daily-reflection")) | "\(.id) \(.agentId)"'` 查出
 declare -A CRONS=(
-  [9c9a233e-a6ce-45d3-a93f-2cff19b44c8b]=lisa
-  [c615be1d-c4bd-4692-a632-9536084f5dea]=doubao
-  [94e72cd8-f488-47e3-9bd2-ad0a3faec2d7]=nyx
-  [ae3745b9-a90b-4ef9-8f9b-d2faf49c5bb2]=main
+  [<CRON_ID_LISA>]=lisa
+  [<CRON_ID_DOUBAO>]=doubao
+  [<CRON_ID_NYX>]=nyx
+  [<CRON_ID_MAIN>]=main
 )
 
 for cron_id in "${!CRONS[@]}"; do
@@ -80,7 +82,7 @@ for cron_id in "${!CRONS[@]}"; do
 2. 读 ${abs_path}/corrections.md 最后一条 ts
 3. 如果任一文件最后写入超过 2 天：
    a. 读 /root/.openclaw/workspace/memory/daily/ 最近 2 天的 daily 文件
-   b. 从中提取任何值得记住的内容（新知识、有效方法、差点犯的错、Daniel 偏好）
+   b. 从中提取任何值得记住的内容（新知识、有效方法、差点犯的错、用户偏好）
    c. 写入 ${abs_path}/hot.md（至少 1 条有意义的 observation）
    d. 如果发现有被纠正但没记录的，写 ${abs_path}/corrections.md
 4. 如果两个文件都在 2 天内有写入，回复「✅ 无需补写」即可

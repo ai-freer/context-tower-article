@@ -263,7 +263,7 @@ memory/self-improving/
 - 错误记录 → 信号积累 → 规则晋升：不是一次犯错就改规则，而是重复出现才晋升
 - shared-rules 跨 Agent 共享：一个 Agent 的教训，所有 Agent 受益
 - 有 reviewer 和 threshold，防止规则膨胀
-- **agent identity 用唯一规范**：自我迭代目录用 agent id（`main` / `lisa` / ...），不用 persona name（`Lolita` / `Lisa🏍`）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping
+- **agent identity 用唯一规范**：自我迭代目录用 agent id（`main` / `lisa` / ...），不用 persona name（`Lolita` / `Lisa` 这类用户自定义显示名）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping
 - **cron payload 用绝对路径**：周期性自反思任务里写 `memory/self-improving/X/hot.md` 这种相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用 `/root/.openclaw/workspace/memory/self-improving/<id>/...` 的绝对路径
 - **patrol 用枚举白名单**：`KNOWN_AGENTS` + `KNOWN_FILES` 列表化，扫到不在白名单的就报警。这能在第 1 周内发现命名漂移、拼写错误（如 `corrrections.md` 多打一个 r）、persona vs agent-id 大小写分裂
 

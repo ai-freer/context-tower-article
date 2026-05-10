@@ -1,7 +1,13 @@
 #!/bin/bash
 # C-#6: lossless-claw 周度健康监控 cron
 # 目的：在 5/9 之前那种"40 天沉默"再次发生时，1 周内能被发现
+#
+# 使用前请替换占位符：
+#   <TELEGRAM_GROUP_ID>  替换成你自己的 Telegram supergroup chatId
+#                        （形如 -100XXXXXXXXXX，可通过 openclaw directory 查）
 set -uo pipefail
+
+TELEGRAM_GROUP_ID="<TELEGRAM_GROUP_ID>"  # 部署前替换
 
 PROMPT='lossless-claw 周度健康检查（自动触发）。
 
@@ -28,7 +34,7 @@ PROMPT='lossless-claw 周度健康检查（自动触发）。
    - 末尾给出 1-2 句话结论：稳定 / 需关注 / 需立刻干预
 
 4. 如果有 🔴 项：
-   - 在 telegram 群 -1003755725026 发简短告警（一句话+指标）
+   - 在 telegram 群 <TELEGRAM_GROUP_ID> 发简短告警（一句话+指标）
    - 否则只写报告，不打扰
 
 参考：上次 lossless-claw 沉默是 2026-03-30 → 2026-05-09，40 天才发现。这个监控就是为了把"40 天"压到"1 周"。'
@@ -49,7 +55,7 @@ fi
   --description "周一 09:30 lisa 跑：lcm.db 健康指标 + 报告 + 异常告警" \
   --announce \
   --channel "telegram" \
-  --to "-1003755725026" \
+  --to "$TELEGRAM_GROUP_ID" \
   2>&1 | grep -v "Config warnings\|qqbot:.*duplicate\|^$\|^├\|^│\|^╭\|^╰\|^◇" | head -20
 
 echo

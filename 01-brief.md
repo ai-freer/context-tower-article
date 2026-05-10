@@ -3,7 +3,7 @@
 - Date: 2026-05-06
 - Purpose: 脱敏后，将当前 OpenClaw 上下文管理实践抽象成一篇可公开的架构/教程文章。
 - Intended lead writer: Lisa
-- Engineering validation contributors: Nyx / 桃子
+- Engineering validation contributors: peer agents (e.g. nyx / doubao)
 
 ## 1. 文章定位
 
@@ -387,9 +387,9 @@ L1 Identity Injection     身份 / 用户 / persona
 - 面向读者：OpenClaw 进阶用户 + AI Agent builder。
 - 每层给一个“为什么需要它”的直觉例子。
 
-## 9. 桃子可补充内容
+## 9. doubao 可补充内容
 
-建议桃子补：
+建议 doubao agent 补：
 
 1. 脱敏后的配置片段。
 2. post-dreaming watchdog 的伪代码或流程图。
@@ -397,9 +397,9 @@ L1 Identity Injection     身份 / 用户 / persona
 4. promotion stats 如何作为健康指标。
 5. active-memory 质量过滤建议。
 
-## 10. Nyx 可补充内容
+## 10. nyx 可补充内容
 
-Nyx 可补：
+nyx agent 可补：
 
 1. 从审计报告抽象出的系统健康矩阵。
 2. 九层之间的数据流。

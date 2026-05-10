@@ -89,7 +89,9 @@ NEW_MSG="Self-improving 主动反思检查（自动触发）。
    c. 写入 hot.md（至少 1 条有意义的 observation）
 4. 如果都在 2 天内有写入，回复「✅ 无需补写」即可"
 
-/usr/bin/openclaw cron edit ae3745b9-a90b-4ef9-8f9b-d2faf49c5bb2 --message "$NEW_MSG" 2>&1 | grep -v "Config warnings\|qqbot\|^$" | head -10
+# 替换为你环境里 self-improving-daily-reflection-lolita 那条 cron 的 UUID
+CRON_ID_MAIN_REFLECTION="<CRON_ID_MAIN_REFLECTION>"
+/usr/bin/openclaw cron edit "$CRON_ID_MAIN_REFLECTION" --message "$NEW_MSG" 2>&1 | grep -v "Config warnings\|qqbot\|^$" | head -10
 echo
 
 echo "--- 8. 验证最终状态 ---"
