@@ -338,7 +338,7 @@ L9 技能进化（workflow → skill）
 
 ## 搭建路径建议
 
-不需要一次性搭建九层。建议分阶段：
+不需要一次性搭建九层。建议分阶段（在 GitHub Web UI 阅读时，下方 checkbox 可点击勾选作为自我评估）：
 
 **第一阶段：基础可用（L1-L3）**
 - [ ] 写好 SOUL.md、IDENTITY.md、USER.md
