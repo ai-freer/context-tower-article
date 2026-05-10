@@ -4,6 +4,18 @@
 
 ---
 
+## 摘要（Executive Summary）
+
+如果你只读这一段：
+
+- **大上下文窗口 ≠ 上下文管理**。窗口解决"能装多少"，不解决"装什么、何时召回、如何压缩、怎样进化"。
+- **长期运行 Agent 需要 9 个维度的治理**，分成基础层（L1–L3 身份 / 规则 / 记忆）、运行时层（L4–L6 检索 / 召回 / 会话生存）、进化层（L7–L9 整理 / 迭代 / 技能化），构成闭环而非线性流水线。
+- **最容易"安静吃亏"的两点都在 L6**：`plugins.slots.contextEngine` 不绑定时系统不报错，只是悄悄退化到 legacy 截断；以及 LLM 摘要器没做 secrets redaction，API key 会经 FTS + vector 被持续放大注入。建议搭 L6 时一次到位。
+- **不需要一次性搭满九层**。L1–L3 几小时上手；L4–L6 是质变临界点；L7–L9 让系统真正自愈。
+- **工程态度比单点修复更关键**。开源组件需要的小修整（L4 parser fail-soft / L6 摘要前 redact）要做成 idempotent + boot-time 自愈的"工程资产"，而不是一次性 hotfix。
+
+---
+
 ## 引言：大窗口的幻觉
 
 上下文窗口从 4K 到 128K 再到 1M+，很多人以为"窗口够大就不需要记忆管理了"。
@@ -165,7 +177,7 @@ memory/
 **OpenClaw 中的实现**：
 - Active Memory 插件：在用户消息进入 Agent 前，自动搜索相关记忆
 - 将召回结果压缩为短摘要注入 prompt
-- 结果标记为 untrusted context（不作为绝对事实）
+- 结果标记为 untrusted context：明确告知 Agent 这部分内容来自自动召回而非用户原话，可以质疑、忽略或反向校验，不必作为权威事实直接采用
 
 **关键设计**：
 - 主动召回 ≠ 无脑注入。有质量阈值、空结果过滤、相关性判断
@@ -182,6 +194,8 @@ memory/
 
 ## L6 会话生存层：长会话不丢上下文
 
+> L6 是九层塔最复杂、也最容易"安静吃亏"的一层——本节多数 critical 标注集中在这里，建议慢读。
+
 **解决的问题**：长对话会超过模型上下文窗口。只靠简单截断或一次性 compaction，会让早期约定、任务状态和关键决策从当前对话里消失。
 
 **OpenClaw 中的实现**：
@@ -191,18 +205,16 @@ memory/
 - Session transcript 被索引，可供 L4 语义检索和后续 Dreaming 使用
 
 **关键设计**：
-- 不依赖“大窗口就不会压缩”——任何窗口都有极限
-- L6 的中心不是单纯 flush，而是“运行时上下文生存”：谁负责摄入、压缩、组装当前会话
+- L6 的中心不是单纯 flush，而是"运行时上下文生存"：谁负责摄入、压缩、组装当前会话
+- 检索层回答"该找回什么长期记忆"，context engine 回答"当前这条长会话怎样继续保持连贯"——两者互补，不互相替代
 - memoryFlush / safeguard compaction 是 fallback safety rail，不是替代 context engine 的主机制
 - 长任务应该外化 plan 到文件，而不是只存在 context 里
-- **必须显式绑定 contextEngine slot**：`plugins.slots.contextEngine` 不配置时，系统不会报错，只是悄悄回退到 legacy 截断引擎。这是个安静失败模式——文件 size 不增长、WAL 不写入是排查信号
-- **LLM 摘要前必须 redact secrets**：摘要器（agent-C/lite 类小模型）原样保留源消息里的 API key / bot token。这些 secrets 一旦被写入 summary，会进入 FTS 索引、被 vector embedding 收录，并在下次组装 context 时再次被注入新 prompt——形成持续放大。最佳实践是在调 LLM **之前**做 regex redaction
-- **短源跳过 LLM**：源 < 200 tokens 直接 store-as-is，不调 summarizer。否则会出现"摘要 = timestamp 包装 + 原文"的反向膨胀，既浪费 LLM 调用又虚耗 token
+- **必须显式绑定 `plugins.slots.contextEngine`**：不绑定不会报错，只会悄悄退化到 legacy 截断引擎（详见坑 #6）
+- **摘要 LLM 调用前必须 regex redact secrets**：否则 sk-XXX / token 会经 FTS + vector 持续放大注入（详见坑 #7）
+- **短源 (< 200 tokens) 跳过 summarizer**：避免"摘要 = timestamp + 原文"的反向膨胀（详见坑 #8）
 
 **工程 Insight**：
-> 一个成熟 Agent 需要“会话生存层”，而不只是更大的上下文窗口。检索层回答“该找回什么长期记忆”，context engine 回答“当前这条长会话怎样继续保持连贯”。两者互补，不互相替代。
-
-> compaction/heartbeat/system prompt 被写入 transcript 后，可能被后台整理层（L7）错误晋升为长期记忆。会话生存层和后台整理层之间需要噪声过滤机制。
+> compaction / heartbeat / system prompt 被写入 transcript 后，可能被后台整理层（L7）错误晋升为长期记忆。会话生存层和后台整理层之间需要噪声过滤机制。
 
 > Secrets 在 raw 消息里容易识别（grep 一抓一个准），但 LLM 摘要把它换个上下文重新表述后，固定的 grep 规则就不一定 catch 得到了。在源头 redact 比事后 audit 容易得多——这是 L6 必须正视的安全责任。
 
@@ -211,8 +223,6 @@ memory/
 - 把 memoryFlush 当成主机制，而不是 fallback safety rail
 - 长任务没有外化 plan，压缩后目标漂移
 - 系统消息混入 transcript，污染下游
-- **配置级安静失败**：没绑定 `plugins.slots.contextEngine` 时，引擎安装但永不被使用——没有 L7 的健康监控，可能 40 天才发现
-- **secrets 经摘要 FTS 放大**：API key / token 进 summaries 表后被 lcm_grep 命中、被 vector index 收录、被下次 context assembly 再次注入 prompt
 
 ---
 
@@ -242,7 +252,6 @@ memory/
 - 后台任务成功但报告投递失败，无人知道结果
 - 噪声进入 corpus 后被长期污染
 - Promotion threshold 太宽，低价值内容晋升
-- 健康监控空缺：context engine 等"安静失败"组件如果不被周期性 sanity-check，回归发现窗口可能从"1 周"变成"40 天"
 
 ---
 
@@ -352,12 +361,9 @@ L9 技能进化（workflow → skill）
 
 ## 源码层的小修整：把开源组件做成"工程资产"
 
-诚实地说，把九层塔落到生产时，光配置是不够的。有两处会需要在开源组件源码上做小幅适配：
+诚实地说，把九层塔落到生产时，光配置是不够的。前文 L4（parser fail-soft）和 L6（摘要前 redact secrets / 短源跳过 LLM）提到的几处问题，都需要在开源组件源码上做小幅适配。
 
-- **L4 语义检索**：检索 CLI 的输出 JSON parser 在某些边界情况会输出非 JSON 前缀（"Warning: ...", "Usage: ..."），需要让 parser 改成 fail-soft（warn + 返回 []，而不是 throw）。否则一个 collection 的偶发噪声会把整条多 collection 检索拖到慢 fallback。
-- **L6 无损压缩引擎**：摘要 LLM 调用前注入 secret redaction（regex 替换 `sk-XXX` / Bearer / bot token 等），并对短源（< 200 tokens）跳过 LLM 调用。前者防 secrets 经摘要被 FTS 放大，后者避免"摘要比源还长"的反向膨胀。
-
-这种"小修小补"如果作为临时 hotfix 处理，会随着 npm 升级或上游 git pull 失效；做成可观测、可重启自愈的工程资产，才能真正成为架构的一部分。最佳实践是：
+这一节不再重复"改什么"，重点谈"怎样让这种修改活下去"——临时 hotfix 会随着 npm 升级或上游 git pull 失效；只有做成可观测、可重启自愈的工程资产，才能真正成为架构的一部分。最佳实践是：
 
 | 要素 | 做法 |
 |---|---|
@@ -399,21 +405,9 @@ L9 技能进化（workflow → skill）
 
 ## 结语
 
-九层塔不是为了复杂而复杂。它是因为长期运行的 Agent 面临的问题天然分布在九个不同维度：
+九层塔不是为了复杂而复杂——长期运行的 Agent 面临的问题天然分布在九个不同维度（身份 / 规则 / 记忆 / 检索 / 召回 / 会话生存 / 整理 / 自我迭代 / 技能化），缺一层就会在某个时刻"漏出来"。
 
-- 身份要稳定
-- 规则要明确
-- 记忆要持久
-- 检索要精准
-- 召回要主动
-- 会话要存活
-- 噪声要清理
-- 错误要修正
-- 经验要复用
-
-好的 Agent 不是"记得更多"，而是"知道什么该记、什么时候召回、何时压缩、如何清噪、怎样从经验中进化"。
-
-这就是 Context Engineering 的本质：不是管理上下文的大小，而是管理上下文的生命周期。
+好的 Agent 不是"记得更多"，而是知道什么该记、什么时候召回、何时压缩、如何清噪、怎样从经验中进化。这就是 Context Engineering 的本质：**不是管理上下文的大小，而是把上下文的整个生命周期做成可观测、可修复、可进化的工程闭环。**
 
 ---
 
