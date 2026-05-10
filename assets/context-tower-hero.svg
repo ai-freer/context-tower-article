@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 760" role="img" aria-labelledby="title desc">
+  <title id="title">上下文管理九层塔横幅信息图</title>
+  <desc id="desc">九层塔将长期运行 Agent 的上下文治理拆成基础层、运行时层和进化层，形成从记忆到召回再到自我改进的闭环。</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffdf8"/>
+      <stop offset="0.58" stop-color="#f7f3e9"/>
+      <stop offset="1" stop-color="#eef4f1"/>
+    </linearGradient>
+    <linearGradient id="evolution" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#efc7b1"/>
+      <stop offset="1" stop-color="#f4d9c9"/>
+    </linearGradient>
+    <linearGradient id="runtime" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d7e3dc"/>
+      <stop offset="1" stop-color="#e7ead7"/>
+    </linearGradient>
+    <linearGradient id="foundation" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ddd5be"/>
+      <stop offset="1" stop-color="#ebe5d2"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#47372d" flood-opacity="0.14"/>
+    </filter>
+    <style>
+      .bg { fill: url(#paper); }
+      .grid { stroke: #ded7c8; stroke-width: 1; opacity: .42; }
+      .ink { fill: #1f2328; }
+      .accent { fill: #b8431e; }
+      .stroke { stroke: #a79d89; stroke-width: 1.5; }
+      .rule { stroke: #b8431e; stroke-width: 3; stroke-linecap: round; }
+      .arrow { fill: none; stroke: #b8431e; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .arrow-soft { fill: none; stroke: #6f8f83; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+      .card { fill: rgba(255,255,255,.72); stroke: #d8d2c4; stroke-width: 1.5; }
+      .layer { font: 700 23px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      .layer-desc { font: 500 16px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #5f675f; }
+      .tag { font: 800 20px ui-monospace, "SF Mono", Menlo, Consolas, monospace; fill: #b8431e; letter-spacing: .03em; }
+      .group-label { font: 700 18px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #4d544f; letter-spacing: .08em; }
+      .eyebrow { font: 800 18px ui-monospace, "SF Mono", Menlo, Consolas, monospace; letter-spacing: .16em; fill: #b8431e; }
+      .headline { font: 800 58px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #1f2328; letter-spacing: .01em; }
+      .subhead { font: 500 25px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #57606a; }
+      .small { font: 600 18px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #56615c; }
+      .tiny { font: 700 14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #7a5d4d; letter-spacing: .06em; }
+      .mono { font: 700 17px ui-monospace, "SF Mono", Menlo, Consolas, monospace; fill: #38423d; }
+    </style>
+    <marker id="arrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b8431e"/>
+    </marker>
+    <marker id="arrowHeadSoft" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6f8f83"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1440" height="760"/>
+  <g opacity=".7">
+    <path class="grid" d="M80 110H1360M80 230H1360M80 350H1360M80 470H1360M80 590H1360"/>
+    <path class="grid" d="M160 60V700M360 60V700M560 60V700M760 60V700M960 60V700M1160 60V700M1360 60V700"/>
+  </g>
+
+  <g transform="translate(88 96)">
+    <text class="eyebrow" x="0" y="0">OPENCLAW · CONTEXT ENGINEERING</text>
+    <text class="headline" x="0" y="76">上下文管理九层塔</text>
+    <text class="subhead" x="0" y="124">不是更大的窗口，而是一套上下文治理系统</text>
+    <path class="rule" d="M0 160H108"/>
+
+    <g transform="translate(0 204)">
+      <rect class="card" x="0" y="0" width="468" height="82" rx="8"/>
+      <text class="tag" x="24" y="34">L1-L3</text>
+      <text class="small" x="110" y="34">基础层</text>
+      <text class="layer-desc" x="24" y="62">身份 / 规则 / 长期事实，定义 Agent 的稳定底座</text>
+    </g>
+    <g transform="translate(0 304)">
+      <rect class="card" x="0" y="0" width="468" height="82" rx="8"/>
+      <text class="tag" x="24" y="34">L4-L6</text>
+      <text class="small" x="110" y="34">运行时层</text>
+      <text class="layer-desc" x="24" y="62">检索 / 召回 / 会话生存，让记忆进入当前任务</text>
+    </g>
+    <g transform="translate(0 404)">
+      <rect class="card" x="0" y="0" width="468" height="82" rx="8"/>
+      <text class="tag" x="24" y="34">L7-L9</text>
+      <text class="small" x="110" y="34">进化层</text>
+      <text class="layer-desc" x="24" y="62">整理 / 纠错 / 技能化，把经验变成能力</text>
+    </g>
+
+    <g transform="translate(0 532)">
+      <text class="tiny" x="0" y="0">核心临界点</text>
+      <text class="mono" x="0" y="32">L6 = Lossless Context Engine + redaction + flush</text>
+    </g>
+  </g>
+
+  <g transform="translate(650 78)" filter="url(#shadow)">
+    <rect x="0" y="0" width="680" height="604" rx="18" fill="rgba(255,255,255,.64)" stroke="#d8d2c4" stroke-width="1.5"/>
+    <text class="group-label" x="56" y="54">EVOLUTION</text>
+    <text class="group-label" x="56" y="254">RUNTIME</text>
+    <text class="group-label" x="56" y="454">FOUNDATION</text>
+
+    <g transform="translate(184 34)">
+      <rect x="36" y="0" width="408" height="52" rx="8" fill="url(#evolution)" class="stroke"/>
+      <text class="tag" x="60" y="34">L9</text>
+      <text class="layer ink" x="116" y="34">能力进化</text>
+      <text class="layer-desc" x="258" y="34">经验 → 技能</text>
+    </g>
+    <g transform="translate(184 94)">
+      <rect x="18" y="0" width="444" height="52" rx="8" fill="url(#evolution)" class="stroke"/>
+      <text class="tag" x="42" y="34">L8</text>
+      <text class="layer ink" x="98" y="34">自我迭代</text>
+      <text class="layer-desc" x="240" y="34">反馈 → 规则</text>
+    </g>
+    <g transform="translate(184 154)">
+      <rect x="0" y="0" width="480" height="52" rx="8" fill="url(#evolution)" class="stroke"/>
+      <text class="tag" x="24" y="34">L7</text>
+      <text class="layer ink" x="80" y="34">后台整理</text>
+      <text class="layer-desc" x="222" y="34">短期 → 长期</text>
+    </g>
+
+    <g transform="translate(184 224)">
+      <rect x="0" y="0" width="480" height="52" rx="8" fill="url(#runtime)" stroke="#b8431e" stroke-width="2.5"/>
+      <text class="tag" x="24" y="34">L6</text>
+      <text class="layer ink" x="80" y="34">会话生存</text>
+      <text class="layer-desc" x="222" y="34">DAG / 压缩 / 防丢失</text>
+    </g>
+    <g transform="translate(184 284)">
+      <rect x="18" y="0" width="444" height="52" rx="8" fill="url(#runtime)" class="stroke"/>
+      <text class="tag" x="42" y="34">L5</text>
+      <text class="layer ink" x="98" y="34">主动召回</text>
+      <text class="layer-desc" x="240" y="34">消息前注入</text>
+    </g>
+    <g transform="translate(184 344)">
+      <rect x="36" y="0" width="408" height="52" rx="8" fill="url(#runtime)" class="stroke"/>
+      <text class="tag" x="60" y="34">L4</text>
+      <text class="layer ink" x="116" y="34">语义检索</text>
+      <text class="layer-desc" x="258" y="34">search / fallback</text>
+    </g>
+
+    <g transform="translate(184 414)">
+      <rect x="0" y="0" width="480" height="52" rx="8" fill="url(#foundation)" class="stroke"/>
+      <text class="tag" x="24" y="34">L3</text>
+      <text class="layer ink" x="80" y="34">文件记忆</text>
+      <text class="layer-desc" x="222" y="34">Markdown facts</text>
+    </g>
+    <g transform="translate(184 474)">
+      <rect x="18" y="0" width="444" height="52" rx="8" fill="url(#foundation)" class="stroke"/>
+      <text class="tag" x="42" y="34">L2</text>
+      <text class="layer ink" x="98" y="34">规则治理</text>
+      <text class="layer-desc" x="240" y="34">边界 / 协议</text>
+    </g>
+    <g transform="translate(184 534)">
+      <rect x="36" y="0" width="408" height="52" rx="8" fill="url(#foundation)" class="stroke"/>
+      <text class="tag" x="60" y="34">L1</text>
+      <text class="layer ink" x="116" y="34">身份注入</text>
+      <text class="layer-desc" x="258" y="34">persona anchor</text>
+    </g>
+  </g>
+
+  <g>
+    <path class="arrow" marker-end="url(#arrowHead)" d="M1140 706 C1320 690 1364 554 1320 420"/>
+    <path class="arrow" marker-end="url(#arrowHead)" d="M1288 318 C1346 158 1214 58 1052 56"/>
+    <path class="arrow-soft" marker-end="url(#arrowHeadSoft)" d="M580 378 C622 378 642 378 676 378"/>
+    <text class="tiny" x="1114" y="728">跨轮闭环：记忆持续治理，经验持续回流</text>
+  </g>
+</svg>

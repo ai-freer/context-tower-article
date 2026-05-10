@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>上下文管理九层塔 · OpenClaw Context Engineering</title>
 <meta name="description" content="OpenClaw Agent 上下文管理九层塔架构 — 报告、审计、写作输入包">
+<link rel="icon" href="data:,">
 <style>
 :root {
   --fg: #1f2328; --fg-muted: #57606a; --fg-soft: #6e7781;
@@ -29,30 +30,62 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .wrap {
-  max-width: 720px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 64px 24px 96px;
+  padding: 56px 24px 96px;
 }
-.eyebrow {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
+.hero {
+  display: block;
+  margin-bottom: 46px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  color: var(--fg);
+  text-decoration: none;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: var(--bg-soft);
+  font-size: 14px;
   font-weight: 600;
-  margin: 0 0 12px;
 }
-h1 {
-  font-size: 30px;
-  font-weight: 700;
-  margin: 0 0 12px;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+.button.primary {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
 }
-.lead {
-  font-size: 17px;
-  color: var(--fg-muted);
-  margin: 0 0 36px;
-  line-height: 1.6;
+.hero-media {
+  min-width: 0;
+}
+.hero-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-soft);
+  box-shadow: 0 20px 48px rgba(64, 50, 38, 0.12);
 }
 .card {
   display: block;
@@ -129,13 +162,27 @@ footer {
   color: var(--fg-soft);
 }
 footer a { color: inherit; }
+@media (max-width: 900px) {
+  .wrap { padding-top: 36px; }
+}
+@media (max-width: 620px) {
+  .wrap { padding-left: 18px; padding-right: 18px; }
+  .button { width: 100%; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-<p class="eyebrow">OpenClaw · Context Engineering</p>
-<h1>上下文管理九层塔</h1>
-<p class="lead">一个真正长期运行的 AI Agent，需要的不是更大的上下文窗口，而是一套完整的上下文治理体系。本仓库是该架构的报告、审计与写作输入包的集合。</p>
+<section class="hero" aria-labelledby="hero-title">
+<h1 id="hero-title" class="sr-only">上下文管理九层塔</h1>
+<div class="hero-media">
+<img src="assets/context-tower-hero.svg" alt="上下文管理九层塔信息图：基础层、运行时层、进化层组成长期运行 Agent 的上下文治理闭环">
+</div>
+<div class="hero-actions">
+<a class="button primary" href="03-report.html">阅读 HTML 版</a>
+<a class="button" href="https://github.com/ai-freer/context-tower-article/blob/main/02-report.md">查看 Markdown 源</a>
+</div>
+</section>
 
 <div class="divider">面向读者</div>
 
