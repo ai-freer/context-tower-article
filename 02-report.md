@@ -341,21 +341,23 @@ L9 技能进化（workflow → skill）
 不需要一次性搭建九层。建议分阶段：
 
 **第一阶段：基础可用（L1-L3）**
-- 写好 SOUL.md、IDENTITY.md、USER.md
-- 建立 memory/ 目录结构
-- 定义 AGENTS.md 中的读写规则
+- [ ] 写好 SOUL.md、IDENTITY.md、USER.md
+- [ ] 建立 memory/ 目录结构
+- [ ] 定义 AGENTS.md 中的读写规则
 
 **第二阶段：检索与召回（L4-L6）**
-- 启用 memory search + embedding
-- 配置 Active Memory 插件
-- 启用 session memory 和 compaction flush
+- [ ] 启用 memory search + embedding
+- [ ] 配置 Active Memory 插件
+- [ ] 启用 session memory 和 compaction flush
 
 **第三阶段：自动进化（L7-L9）**
-- 启用 Dreaming + post-sweep watchdog
-- 建立 self-improving 目录和晋升机制
-- 启用 Skill Evolution
+- [ ] 启用 Dreaming + post-sweep watchdog
+- [ ] 建立 self-improving 目录和晋升机制
+- [ ] 启用 Skill Evolution
 
 每个阶段都可以独立运行。但完整的九层塔才能形成真正的闭环。
+
+> 在 GitHub 渲染下这些 checkbox 可以直接点击勾选；在 [HTML 版](https://ai-freer.github.io/context-tower-article/03-report.html#path) 中勾选状态会写入浏览器 localStorage，下次打开仍保留。
 
 ---
 

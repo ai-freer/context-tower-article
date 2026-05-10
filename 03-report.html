@@ -670,6 +670,290 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
   font-weight: 400;
   color: var(--fg-muted);
 }
+
+/* ===== PR-2 interactivity ===== */
+
+/* Tower clickable rows + per-layer badges */
+a.tower-row {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+  transition: padding-left 0.15s, filter 0.15s;
+}
+a.tower-row:hover { filter: brightness(0.96); padding-left: 24px; }
+a.tower-row:hover .layer { color: var(--accent); }
+a.tower-row::after {
+  content: "↗";
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fg-soft);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+a.tower-row:hover::after { opacity: 0.8; }
+
+.layer-badge {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 10px;
+  font-size: 11px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  vertical-align: middle;
+}
+.layer-badge .b {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.layer-badge .b-pit {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  border: 1px solid var(--warn-border);
+}
+.layer-badge .b-crit {
+  background: var(--critical-bg);
+  color: var(--critical-fg);
+  border: 1px solid var(--critical-border);
+}
+
+/* Filter chips for 14-pitfalls table */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0 14px;
+  font-size: 13px;
+  align-items: center;
+}
+.filter-chips .chips-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+  margin-right: 4px;
+}
+.filter-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-soft);
+  color: var(--fg-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 500;
+}
+.filter-chip:hover { color: var(--fg); border-color: var(--accent); }
+.filter-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.filter-chip .chip-n {
+  margin-left: 5px;
+  font-size: 10.5px;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+.pitfalls-table tr.row-hidden { display: none; }
+.pitfalls-empty {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--fg-soft);
+  font-style: italic;
+  font-size: 14px;
+  display: none;
+}
+.pitfalls-empty.show { display: block; }
+
+/* Phases checklist */
+.phase ul li.phase-task {
+  list-style: none;
+  margin-left: -16px;
+  padding-left: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.phase-task input[type="checkbox"] {
+  margin-top: 5px;
+  cursor: pointer;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+.phase-task.done .task-text {
+  text-decoration: line-through;
+  color: var(--fg-soft);
+}
+.phases-progress {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--fg-muted);
+  background: var(--bg-soft);
+  border-radius: 6px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.phases-progress .pp-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.phases-progress .pp-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+.phases-progress .pp-text strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+.phases-reset {
+  font-size: 11px;
+  color: var(--fg-soft);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+.phases-reset:hover { color: var(--accent); }
+
+/* Term hover glossary */
+.term {
+  border-bottom: 1px dashed var(--fg-soft);
+  cursor: help;
+  position: relative;
+}
+.term:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.term[data-def]:hover::after {
+  content: attr(data-def);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--bg);
+  padding: 9px 13px;
+  font-size: 13px;
+  font-weight: 400;
+  border-radius: 6px;
+  white-space: normal;
+  width: 280px;
+  text-align: left;
+  z-index: 50;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  pointer-events: none;
+  line-height: 1.55;
+  font-style: normal;
+}
+.term[data-def]:hover::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--fg);
+  z-index: 50;
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  .term[data-def]:hover::after { width: 220px; font-size: 12px; left: 0; transform: none; }
+  .term[data-def]:hover::before { left: 14px; transform: none; }
+}
+
+/* Dataflow SVG */
+.dataflow-wrap {
+  margin: 22px 0;
+  padding: 18px 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.dataflow-svg {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+}
+.dataflow-node { cursor: pointer; }
+.dataflow-node rect {
+  fill: var(--bg);
+  stroke: var(--border);
+  stroke-width: 1.4;
+  transition: fill 0.15s, stroke 0.15s;
+  rx: 6;
+}
+.dataflow-node:hover rect {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.dataflow-node .df-tag {
+  fill: var(--accent);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.dataflow-node .df-label {
+  fill: var(--fg);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+  font-size: 12.5px;
+  pointer-events: none;
+}
+.dataflow-arrow {
+  stroke: var(--fg-soft);
+  color: var(--fg-soft);
+  stroke-width: 1.4;
+  fill: none;
+  marker-end: url(#df-arrowhead);
+}
+.dataflow-loop {
+  stroke: var(--accent);
+  color: var(--accent);
+  stroke-width: 1.3;
+  stroke-dasharray: 5 4;
+  fill: none;
+  opacity: 0.55;
+  marker-end: url(#df-arrowhead-accent);
+}
+.dataflow-caption {
+  font-size: 12px;
+  color: var(--fg-soft);
+  text-align: center;
+  margin: 8px 0 0;
+  font-style: italic;
+}
+@media (prefers-color-scheme: dark) {
+  .dataflow-node rect { fill: var(--bg-code); }
+}
+
+@media print {
+  .filter-chips, .phases-progress, .phases-reset { display: none; }
+  .pitfalls-table tr.row-hidden { display: table-row !important; }
+}
 </style>
 </head>
 <body>
@@ -815,17 +1099,18 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 
 <h2 id="overview">九层塔总览<a class="anchor" href="#overview">#</a></h2>
 
-<div class="tower">
-<div class="tower-row evolution"><div class="layer">L9</div><div><div class="layer-name">能力进化层</div><div class="layer-desc">经验 → 可复用技能</div></div></div>
-<div class="tower-row evolution"><div class="layer">L8</div><div><div class="layer-name">自我迭代层</div><div class="layer-desc">错误 / 反馈 → 行为规则</div></div></div>
-<div class="tower-row evolution"><div class="layer">L7</div><div><div class="layer-name">后台整理层</div><div class="layer-desc">短期上下文 → 长期记忆</div></div></div>
-<div class="tower-row runtime"><div class="layer">L6</div><div><div class="layer-name">会话生存层</div><div class="layer-desc">Lossless Context Engine / compaction / flush</div></div></div>
-<div class="tower-row runtime"><div class="layer">L5</div><div><div class="layer-name">主动召回层</div><div class="layer-desc">消息前自动注入相关上下文</div></div></div>
-<div class="tower-row runtime"><div class="layer">L4</div><div><div class="layer-name">语义检索层</div><div class="layer-desc">embedding / search / fallback</div></div></div>
-<div class="tower-row foundation"><div class="layer">L3</div><div><div class="layer-name">文件记忆层</div><div class="layer-desc">Markdown 长期事实</div></div></div>
-<div class="tower-row foundation"><div class="layer">L2</div><div><div class="layer-name">规则治理层</div><div class="layer-desc">行为边界 / 工具协议</div></div></div>
-<div class="tower-row foundation"><div class="layer">L1</div><div><div class="layer-name">身份注入层</div><div class="layer-desc">身份 / 用户 / persona</div></div></div>
+<div class="tower" id="tower">
+<a class="tower-row evolution" href="#l9"><div class="layer">L9</div><div><div class="layer-name">能力进化层<span class="layer-badge" data-layer="l9"></span></div><div class="layer-desc">经验 → 可复用技能</div></div></a>
+<a class="tower-row evolution" href="#l8"><div class="layer">L8</div><div><div class="layer-name">自我迭代层<span class="layer-badge" data-layer="l8"></span></div><div class="layer-desc">错误 / 反馈 → 行为规则</div></div></a>
+<a class="tower-row evolution" href="#l7"><div class="layer">L7</div><div><div class="layer-name">后台整理层<span class="layer-badge" data-layer="l7"></span></div><div class="layer-desc">短期上下文 → 长期记忆</div></div></a>
+<a class="tower-row runtime" href="#l6"><div class="layer">L6</div><div><div class="layer-name">会话生存层<span class="layer-badge" data-layer="l6"></span></div><div class="layer-desc">Lossless Context Engine / compaction / flush</div></div></a>
+<a class="tower-row runtime" href="#l5"><div class="layer">L5</div><div><div class="layer-name">主动召回层<span class="layer-badge" data-layer="l5"></span></div><div class="layer-desc">消息前自动注入相关上下文</div></div></a>
+<a class="tower-row runtime" href="#l4"><div class="layer">L4</div><div><div class="layer-name">语义检索层<span class="layer-badge" data-layer="l4"></span></div><div class="layer-desc">embedding / search / fallback</div></div></a>
+<a class="tower-row foundation" href="#l3"><div class="layer">L3</div><div><div class="layer-name">文件记忆层<span class="layer-badge" data-layer="l3"></span></div><div class="layer-desc">Markdown 长期事实</div></div></a>
+<a class="tower-row foundation" href="#l2"><div class="layer">L2</div><div><div class="layer-name">规则治理层<span class="layer-badge" data-layer="l2"></span></div><div class="layer-desc">行为边界 / 工具协议</div></div></a>
+<a class="tower-row foundation" href="#l1"><div class="layer">L1</div><div><div class="layer-name">身份注入层<span class="layer-badge" data-layer="l1"></span></div><div class="layer-desc">身份 / 用户 / persona</div></div></a>
 </div>
+<p style="font-size: 12px; color: var(--fg-soft); margin: -16px 0 24px; text-align: center;">点击任一层跳到详细说明 · <span style="color: var(--warn-fg);">⚠ 数字</span> 为常见坑数 · <span style="color: var(--critical-fg);">🚨 数字</span> 为高严重度坑数</p>
 
 <p>三组，每组三层：</p>
 <ul>
@@ -906,14 +1191,14 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 
 <p><strong>OpenClaw 中的实现</strong>：</p>
 <ul>
-<li>向量索引（embedding）+ 混合搜索（BM25 + semantic）</li>
+<li>向量索引（embedding）+ 混合搜索（<span class="term" data-def="BM25 是一种基于词频和逆文档频率的经典检索打分函数，擅长精确关键词匹配；语义搜索擅长近义召回。两者并用可以兼顾精确和泛化。">BM25</span> + semantic）</li>
 <li>多源检索：memory 文件 + session transcript</li>
 <li>Fallback 机制：primary backend 超时时降级到 builtin index</li>
 </ul>
 
 <p><strong>关键设计</strong>：</p>
 <ul>
-<li>不只是"向量相似度"，还有 temporal decay（时间衰减）和 MMR（多样性）</li>
+<li>不只是"向量相似度"，还有 temporal decay（时间衰减）和 <span class="term" data-def="MMR (Maximal Marginal Relevance)：在召回时把"和 query 相关"和"结果之间不要太冗余"两件事一起优化。避免十条返回都是同一份文档的相似句子。">MMR</span>（多样性）</li>
 <li>索引定期更新（扫描 + embedding）</li>
 <li>搜索结果有质量阈值，不是"找到就注入"</li>
 </ul>
@@ -929,7 +1214,7 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 <li class="pitfall">Fallback 静默工作，掩盖 primary backend 的性能问题</li>
 <li class="pitfall">exact query 被日志文件排在源文件前面（rerank 偏差）</li>
 <li class="critical">检索 CLI 的 stdout 不是干净 JSON——遇到 collection 不存在 / 参数异常时会先打印 <code>Warning:</code> 或 <code>Usage:</code> 文本再给 JSON。下游 parser 必须容错地跳过非 JSON 前缀，<strong>抛错会让多 collection 路径整体退化到慢 fallback</strong></li>
-<li class="pitfall">per-agent 索引会累积大量 orphan 向量（content 已删但 vector 留着），需要周期性 cleanup；orphan 占比 &gt; 50% 是 sqlite 体积膨胀的常见原因</li>
+<li class="pitfall">per-agent 索引会累积大量 <span class="term" data-def="orphan 向量：原始内容（文件、消息）已经删除或修改，但 sqlite 里的 embedding 行还在。日积月累会让索引体积虚胖，召回结果里也会混入指向已不存在内容的命中。">orphan 向量</span>（content 已删但 vector 留着），需要周期性 cleanup；orphan 占比 &gt; 50% 是 sqlite 体积膨胀的常见原因</li>
 </ul>
 
 <h2 id="l5"><span class="layer-tag">L5</span>主动召回层：消息前自动带上下文<a class="anchor" href="#l5">#</a></h2>
@@ -966,7 +1251,7 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 
 <p><strong>OpenClaw 中的实现</strong>：</p>
 <ul>
-<li>Lossless Context Engine（lossless-claw）：作为 <code>plugins.slots.contextEngine</code> 的运行时上下文引擎，实时摄入消息，并用 DAG / 摘要 / 分层压缩来组装下一轮模型上下文</li>
+<li>Lossless Context Engine（lossless-claw）：作为 <code>plugins.slots.contextEngine</code> 的运行时上下文引擎，实时摄入消息，并用 <span class="term" data-def="DAG（有向无环图）：把会话切成节点，每个节点可被多次摘要、再摘要，形成层级。leaf 节点是原始消息，condensed 节点是逐层压缩后的摘要。组装上下文时按需挑选不同层级，做到"既不丢早期决策，又不爆窗口"。">DAG</span> / 摘要 / 分层压缩来组装下一轮模型上下文</li>
 <li>Session Memory hook：实时保存会话 transcript，保留可审计的原始时间线</li>
 <li>Compaction Memory Flush：压缩前自动将重要信息写入 durable memory，作为最后一道持久化防线</li>
 <li>Session transcript 被索引，可供 L4 语义检索和后续 Dreaming 使用</li>
@@ -1020,9 +1305,9 @@ Secrets 在 raw 消息里容易识别（grep 一抓一个准），但 LLM 摘要
 <p><strong>关键设计</strong>：</p>
 <ul>
 <li>Dreaming 不是简单的"把所有东西都记住"，而是有选择地晋升</li>
-<li>Promotion threshold：只有高价值内容才会从短期进入长期</li>
+<li><span class="term" data-def="Promotion threshold：从短期记忆晋升到长期记忆的"门槛"。可以基于重复出现次数、时间衰减、人工评分等。阈值过宽会让噪声污染长期记忆，过严则会丢掉真正有价值的经验。">Promotion threshold</span>：只有高价值内容才会从短期进入长期</li>
 <li>噪声清理是 Dreaming 的必要后置步骤</li>
-<li class="critical"><strong>L7 还要监控 L6 引擎本身</strong>：context engine 是个安静失败的组件（不写入即等于沉默）。L7 应当包含一个周度健康监控 cron，监控 lcm.db 增长、DAG leaf / condensed 比例、WAL 状态。否则一次配置回归可能要 40 天才被发现</li>
+<li class="critical"><strong>L7 还要监控 L6 引擎本身</strong>：context engine 是个安静失败的组件（不写入即等于沉默）。L7 应当包含一个周度健康监控 cron，监控 lcm.db 增长、DAG leaf / condensed 比例、<span class="term" data-def="WAL (Write-Ahead Log)：sqlite 的写日志机制。正常情况下写入会先进 WAL，再 checkpoint 回主库。WAL 长期不增长 = 没人在写；WAL 长期不收缩 = checkpoint 卡住。两者都是 silent-fail 信号。">WAL</span> 状态。否则一次配置回归可能要 40 天才被发现</li>
 </ul>
 
 <p><strong>工程 Insight</strong>：</p>
@@ -1100,27 +1385,52 @@ Dreaming 会把 heartbeat、maintenance、compaction 通知等系统噪声纳入
 
 <h2 id="dataflow">九层之间的数据流<a class="anchor" href="#dataflow">#</a></h2>
 
-<pre><code>用户消息
-  ↓
-L1 / L2 身份 + 规则（自动注入）
-  ↓
-L5 主动召回（自动搜索相关记忆）
-  ↓
-L4 语义检索（按需查找）
-  ↓
-Agent 回答 / 执行
-  ↓
-L6 会话生存（lossless-claw 组装当前上下文 + transcript / flush 兜底）
-  ↓
-L3 文件记忆（显式写入 durable memory）
-  ↓
-L7 Dreaming（每日整理、晋升）
-  ↓
-L8 自我迭代（纠错 → 规则）
-  ↓
-L9 技能进化（workflow → skill）
-  ↓
-下一轮对话继续使用</code></pre>
+<div class="dataflow-wrap">
+<svg class="dataflow-svg" viewBox="0 0 720 720" role="img" aria-labelledby="dataflowTitle">
+<title id="dataflowTitle">九层塔数据流：从用户消息到下一轮对话的闭环</title>
+<defs>
+<marker id="df-arrowhead" viewBox="0 -5 10 10" refX="9" refY="0" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0,-5L10,0L0,5" fill="currentColor" stroke="none"></path>
+</marker>
+<marker id="df-arrowhead-accent" viewBox="0 -5 10 10" refX="9" refY="0" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
+<path d="M0,-5L10,0L0,5" fill="currentColor" stroke="none"></path>
+</marker>
+</defs>
+
+<!-- nodes (linear top-to-bottom, then loop back) -->
+<g class="dataflow-node" data-target=""><rect x="260" y="10" width="200" height="40"></rect><text class="df-label" x="360" y="35" text-anchor="middle">用户消息</text></g>
+<g class="dataflow-node" data-target="#l1"><rect x="240" y="80" width="240" height="48"></rect><text class="df-tag" x="252" y="105">L1 / L2</text><text class="df-label" x="360" y="119" text-anchor="middle">身份 + 规则（自动注入）</text></g>
+<g class="dataflow-node" data-target="#l5"><rect x="240" y="158" width="240" height="48"></rect><text class="df-tag" x="252" y="183">L5</text><text class="df-label" x="360" y="197" text-anchor="middle">主动召回（自动搜索）</text></g>
+<g class="dataflow-node" data-target="#l4"><rect x="240" y="236" width="240" height="48"></rect><text class="df-tag" x="252" y="261">L4</text><text class="df-label" x="360" y="275" text-anchor="middle">语义检索（按需查找）</text></g>
+<g class="dataflow-node" data-target=""><rect x="240" y="314" width="240" height="48" style="fill: var(--accent-soft); stroke: var(--accent);"></rect><text class="df-label" x="360" y="343" text-anchor="middle" style="font-weight: 600; fill: var(--accent);">Agent 回答 / 执行</text></g>
+<g class="dataflow-node" data-target="#l6"><rect x="240" y="392" width="240" height="48"></rect><text class="df-tag" x="252" y="417">L6</text><text class="df-label" x="360" y="431" text-anchor="middle">会话生存（lossless-claw）</text></g>
+<g class="dataflow-node" data-target="#l3"><rect x="240" y="470" width="240" height="48"></rect><text class="df-tag" x="252" y="495">L3</text><text class="df-label" x="360" y="509" text-anchor="middle">文件记忆（durable）</text></g>
+<g class="dataflow-node" data-target="#l7"><rect x="40" y="548" width="200" height="48"></rect><text class="df-tag" x="52" y="573">L7</text><text class="df-label" x="140" y="587" text-anchor="middle">Dreaming（整理）</text></g>
+<g class="dataflow-node" data-target="#l8"><rect x="260" y="548" width="200" height="48"></rect><text class="df-tag" x="272" y="573">L8</text><text class="df-label" x="360" y="587" text-anchor="middle">自我迭代（纠错→规则）</text></g>
+<g class="dataflow-node" data-target="#l9"><rect x="480" y="548" width="200" height="48"></rect><text class="df-tag" x="492" y="573">L9</text><text class="df-label" x="580" y="587" text-anchor="middle">技能进化（→ skill）</text></g>
+<g class="dataflow-node" data-target=""><rect x="240" y="654" width="240" height="40" style="fill: var(--bg-soft);"></rect><text class="df-label" x="360" y="679" text-anchor="middle" style="font-style: italic;">下一轮对话继续使用</text></g>
+
+<!-- arrows: linear flow -->
+<path class="dataflow-arrow" d="M 360 50 L 360 78"></path>
+<path class="dataflow-arrow" d="M 360 128 L 360 156"></path>
+<path class="dataflow-arrow" d="M 360 206 L 360 234"></path>
+<path class="dataflow-arrow" d="M 360 284 L 360 312"></path>
+<path class="dataflow-arrow" d="M 360 362 L 360 390"></path>
+<path class="dataflow-arrow" d="M 360 440 L 360 468"></path>
+<!-- L3 fans out to L7/L8/L9 -->
+<path class="dataflow-arrow" d="M 320 518 Q 200 535 140 546"></path>
+<path class="dataflow-arrow" d="M 360 518 L 360 546"></path>
+<path class="dataflow-arrow" d="M 400 518 Q 520 535 580 546"></path>
+<!-- L7/L8/L9 converge to next-turn -->
+<path class="dataflow-arrow" d="M 140 596 Q 200 630 320 654"></path>
+<path class="dataflow-arrow" d="M 360 596 L 360 654"></path>
+<path class="dataflow-arrow" d="M 580 596 Q 520 630 400 654"></path>
+
+<!-- closing loop: next-turn back to top -->
+<path class="dataflow-loop" d="M 480 674 Q 700 674 700 350 Q 700 30 480 30"></path>
+</svg>
+<p class="dataflow-caption">点击任一节点跳到对应章节 · 虚线表示跨轮闭环</p>
+</div>
 
 <p>这不是线性流程，而是一个闭环。每一层的输出都是其他层的输入。</p>
 
@@ -1128,31 +1438,37 @@ L9 技能进化（workflow → skill）
 
 <p>不需要一次性搭建九层。建议分阶段：</p>
 
-<div class="phases">
-<div class="phase">
+<div class="phases" id="phasesGrid">
+<div class="phase" data-phase="1">
 <h4>第一阶段：基础可用（L1-L3）</h4>
 <ul>
-<li>写好 SOUL.md、IDENTITY.md、USER.md</li>
-<li>建立 memory/ 目录结构</li>
-<li>定义 AGENTS.md 中的读写规则</li>
+<li class="phase-task"><input type="checkbox" data-task="p1-1"><span class="task-text">写好 SOUL.md、IDENTITY.md、USER.md</span></li>
+<li class="phase-task"><input type="checkbox" data-task="p1-2"><span class="task-text">建立 memory/ 目录结构</span></li>
+<li class="phase-task"><input type="checkbox" data-task="p1-3"><span class="task-text">定义 AGENTS.md 中的读写规则</span></li>
 </ul>
 </div>
-<div class="phase">
+<div class="phase" data-phase="2">
 <h4>第二阶段：检索与召回（L4-L6）</h4>
 <ul>
-<li>启用 memory search + embedding</li>
-<li>配置 Active Memory 插件</li>
-<li>启用 session memory 和 compaction flush</li>
+<li class="phase-task"><input type="checkbox" data-task="p2-1"><span class="task-text">启用 memory search + embedding</span></li>
+<li class="phase-task"><input type="checkbox" data-task="p2-2"><span class="task-text">配置 Active Memory 插件</span></li>
+<li class="phase-task"><input type="checkbox" data-task="p2-3"><span class="task-text">启用 session memory 和 compaction flush</span></li>
 </ul>
 </div>
-<div class="phase">
+<div class="phase" data-phase="3">
 <h4>第三阶段：自动进化（L7-L9）</h4>
 <ul>
-<li>启用 Dreaming + post-sweep watchdog</li>
-<li>建立 self-improving 目录和晋升机制</li>
-<li>启用 Skill Evolution</li>
+<li class="phase-task"><input type="checkbox" data-task="p3-1"><span class="task-text">启用 Dreaming + post-sweep watchdog</span></li>
+<li class="phase-task"><input type="checkbox" data-task="p3-2"><span class="task-text">建立 self-improving 目录和晋升机制</span></li>
+<li class="phase-task"><input type="checkbox" data-task="p3-3"><span class="task-text">启用 Skill Evolution</span></li>
 </ul>
 </div>
+</div>
+
+<div class="phases-progress" id="phasesProgress" aria-live="polite">
+<span class="pp-text">你已搭到 <strong><span id="ppDone">0</span></strong>/<strong>9</strong> 项 · 第 <strong><span id="ppPhase">0</span></strong>/3 阶段</span>
+<div class="pp-bar"><div class="pp-fill" id="ppFill" style="width: 0%"></div></div>
+<button type="button" class="phases-reset" id="phasesReset">重置</button>
 </div>
 
 <p>每个阶段都可以独立运行。但完整的九层塔才能形成真正的闭环。</p>
@@ -1181,27 +1497,41 @@ L9 技能进化（workflow → skill）
 
 <p>九层塔架构清单容易看，但落地时会反复踩一些坑。以下是从实际运行里整理出的高频陷阱，按层归类：</p>
 
-<table class="pitfalls-table">
+<div class="filter-chips" id="pitfallsFilter" role="toolbar" aria-label="按层 / 严重度筛选">
+<span class="chips-label">筛选</span>
+<button type="button" class="filter-chip active" data-filter="all">全部<span class="chip-n">14</span></button>
+<button type="button" class="filter-chip" data-filter="L1">L1–L3</button>
+<button type="button" class="filter-chip" data-filter="L4">L4</button>
+<button type="button" class="filter-chip" data-filter="L5">L5</button>
+<button type="button" class="filter-chip" data-filter="L6">L6</button>
+<button type="button" class="filter-chip" data-filter="L7">L7</button>
+<button type="button" class="filter-chip" data-filter="L8">L8</button>
+<button type="button" class="filter-chip" data-filter="ops">运维</button>
+<button type="button" class="filter-chip" data-filter="critical">🚨 高严重度</button>
+</div>
+
+<table class="pitfalls-table" id="pitfallsTable">
 <thead>
 <tr><th>#</th><th>坑</th><th>出现层</th><th>一句话提醒</th></tr>
 </thead>
 <tbody>
-<tr><td>1</td><td>bootstrap 注入文件超阈值被截断</td><td>L1 / L2 / L3</td><td>MEMORY.md 严格限制为"规则 + 索引"，自动 promotion 内容拆出去</td></tr>
-<tr><td>2</td><td>embedding 覆盖率 ≠ 索引完成率</td><td>L4</td><td>"files indexed" 是文件级，"embedded chunks" 是向量级，两者可以差几个数量级</td></tr>
-<tr><td>3</td><td>检索 CLI stdout 非 JSON 噪声</td><td>L4</td><td>qmd 类 CLI 在 collection 异常时往 stdout 写 warning，下游 parser 必须 fail-soft</td></tr>
-<tr><td>4</td><td>多 collection 路径单点失败传染</td><td>L4 / L5</td><td>一个 collection 的子查询抛错不应让整条 active-memory 退化到 builtin</td></tr>
-<tr><td>5</td><td>active-memory 注入低质量摘要</td><td>L5</td><td>加 minRelevanceScore + 模板化 fallback 过滤 + untrusted context 标记</td></tr>
-<tr class="high"><td>6</td><td><strong>context engine slot 没绑定 = 安静失败</strong></td><td>L6</td><td><code>plugins.slots.contextEngine</code> 缺失时系统不报错，只是 lcm.db 永不增长——必须有 L7 健康监控</td></tr>
-<tr class="high"><td>7</td><td><strong>LLM 摘要把 secrets 经 FTS 放大</strong></td><td>L6</td><td>摘要器原样保留 sk-XXX / token，进 summaries 后 lcm_grep 命中、vector embedding 收录、下次组装再注入 prompt——<strong>必须在调 LLM 前 redact</strong></td></tr>
-<tr><td>8</td><td>短源做 summary 反而变长</td><td>L6</td><td>源 &lt; 200 tokens 直接 return 原文，避免"摘要 = timestamp + 原文"的反向膨胀</td></tr>
-<tr><td>9</td><td>session 内部消息（cron / subagent）污染 corpus</td><td>L6 / L7</td><td><code>ignoreSessionPatterns</code> 在源头排除，比在 Dreaming 后清理高效</td></tr>
-<tr><td>10</td><td>post-sweep watchdog 投递失败 → 无人知</td><td>L7</td><td>watchdog 自身也要监控；delivery 失败要降级到 local log + 告警</td></tr>
-<tr><td>11</td><td>persona 名 vs agent id 双轨写入造成目录分裂</td><td>L8</td><td>全局只用 agent id（agent-A / agent-B / ...）；persona name 不进文件系统</td></tr>
-<tr><td>12</td><td>cron payload 用相对路径在不同 cwd 下落到不同 workspace</td><td>L8</td><td>自反思 cron 一律用绝对路径</td></tr>
-<tr><td>13</td><td>per-agent 索引累积 orphan 向量</td><td>L4</td><td>周期性 cleanup，否则 sqlite 体积膨胀（实测可达 80%+ 都是 orphan）</td></tr>
-<tr><td>14</td><td>sudoers 文件名带 <code>.</code> 被默认忽略</td><td>运维</td><td><code>/etc/sudoers.d/X.tmp</code> 不生效；要用 <code>X</code> 不带后缀</td></tr>
+<tr data-layers="L1 L2 L3"><td>1</td><td>bootstrap 注入文件超阈值被截断</td><td>L1 / L2 / L3</td><td>MEMORY.md 严格限制为"规则 + 索引"，自动 promotion 内容拆出去</td></tr>
+<tr data-layers="L4"><td>2</td><td>embedding 覆盖率 ≠ 索引完成率</td><td>L4</td><td>"files indexed" 是文件级，"embedded chunks" 是向量级，两者可以差几个数量级</td></tr>
+<tr data-layers="L4"><td>3</td><td>检索 CLI stdout 非 JSON 噪声</td><td>L4</td><td>qmd 类 CLI 在 collection 异常时往 stdout 写 warning，下游 parser 必须 fail-soft</td></tr>
+<tr data-layers="L4 L5"><td>4</td><td>多 collection 路径单点失败传染</td><td>L4 / L5</td><td>一个 collection 的子查询抛错不应让整条 active-memory 退化到 builtin</td></tr>
+<tr data-layers="L5"><td>5</td><td>active-memory 注入低质量摘要</td><td>L5</td><td>加 minRelevanceScore + 模板化 fallback 过滤 + untrusted context 标记</td></tr>
+<tr class="high" data-layers="L6"><td>6</td><td><strong>context engine slot 没绑定 = 安静失败</strong></td><td>L6</td><td><code>plugins.slots.contextEngine</code> 缺失时系统不报错，只是 lcm.db 永不增长——必须有 L7 健康监控</td></tr>
+<tr class="high" data-layers="L6"><td>7</td><td><strong>LLM 摘要把 secrets 经 <span class="term" data-def="FTS (Full-Text Search)：sqlite 的全文索引。把摘要内容拆成 token 后建倒排索引，支持关键字搜索。secrets 一旦进 FTS，下次任何关键字搜索都可能命中并把它再次塞回 prompt。">FTS</span> 放大</strong></td><td>L6</td><td>摘要器原样保留 sk-XXX / token，进 summaries 后 lcm_grep 命中、vector embedding 收录、下次组装再注入 prompt——<strong>必须在调 LLM 前 redact</strong></td></tr>
+<tr data-layers="L6"><td>8</td><td>短源做 summary 反而变长</td><td>L6</td><td>源 &lt; 200 tokens 直接 return 原文，避免"摘要 = timestamp + 原文"的反向膨胀</td></tr>
+<tr data-layers="L6 L7"><td>9</td><td>session 内部消息（cron / subagent）污染 corpus</td><td>L6 / L7</td><td><code>ignoreSessionPatterns</code> 在源头排除，比在 Dreaming 后清理高效</td></tr>
+<tr data-layers="L7"><td>10</td><td>post-sweep watchdog 投递失败 → 无人知</td><td>L7</td><td>watchdog 自身也要监控；delivery 失败要降级到 local log + 告警</td></tr>
+<tr data-layers="L8"><td>11</td><td>persona 名 vs agent id 双轨写入造成目录分裂</td><td>L8</td><td>全局只用 agent id（agent-A / agent-B / ...）；persona name 不进文件系统</td></tr>
+<tr data-layers="L8"><td>12</td><td>cron payload 用相对路径在不同 cwd 下落到不同 workspace</td><td>L8</td><td>自反思 cron 一律用绝对路径</td></tr>
+<tr data-layers="L4"><td>13</td><td>per-agent 索引累积 orphan 向量</td><td>L4</td><td>周期性 cleanup，否则 sqlite 体积膨胀（实测可达 80%+ 都是 orphan）</td></tr>
+<tr data-layers="ops"><td>14</td><td>sudoers 文件名带 <code>.</code> 被默认忽略</td><td>运维</td><td><code>/etc/sudoers.d/X.tmp</code> 不生效；要用 <code>X</code> 不带后缀</td></tr>
 </tbody>
 </table>
+<div class="pitfalls-empty" id="pitfallsEmpty">没有匹配的坑。换一个筛选条件试试。</div>
 
 <p>其中 <strong>#6 和 #7</strong> 是这套架构最容易"安静吃亏"的两点：context engine 不绑 slot，整个 L6 等于没装；摘要器没做 secrets redaction，secrets 会经 FTS 持续放大。这两条强烈建议在搭建 L6 时就一次到位。</p>
 
@@ -1265,6 +1595,149 @@ tocToggle.addEventListener('click', () => setTocOpen(!toc.classList.contains('op
 tocBackdrop.addEventListener('click', () => setTocOpen(false));
 tocLinks.forEach(link => link.addEventListener('click', () => setTocOpen(false)));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && toc.classList.contains('open')) setTocOpen(false); });
+
+/* ===== PR-2 interactivity ===== */
+
+// 1) Tower per-layer pitfall badges — count li.pitfall + li.critical inside each h2 section
+(function () {
+  const layers = ['l1','l2','l3','l4','l5','l6','l7','l8','l9'];
+  layers.forEach(id => {
+    const heading = document.getElementById(id);
+    if (!heading) return;
+    let pit = 0, crit = 0;
+    let n = heading.nextElementSibling;
+    while (n && n.tagName !== 'H2') {
+      n.querySelectorAll('li.pitfall').forEach(() => pit++);
+      n.querySelectorAll('li.critical').forEach(() => crit++);
+      n = n.nextElementSibling;
+    }
+    const badge = document.querySelector(`.layer-badge[data-layer="${id}"]`);
+    if (!badge) return;
+    const parts = [];
+    if (pit) parts.push(`<span class="b b-pit">⚠ ${pit}</span>`);
+    if (crit) parts.push(`<span class="b b-crit">🚨 ${crit}</span>`);
+    badge.innerHTML = parts.join('');
+  });
+})();
+
+// 2) Pitfalls table filter chips
+(function () {
+  const chips = document.querySelectorAll('#pitfallsFilter .filter-chip');
+  const rows = document.querySelectorAll('#pitfallsTable tbody tr');
+  const empty = document.getElementById('pitfallsEmpty');
+  if (!chips.length || !rows.length) return;
+
+  // count per filter for chip labels
+  const counts = { L1: 0, L4: 0, L5: 0, L6: 0, L7: 0, L8: 0, ops: 0, critical: 0 };
+  rows.forEach(r => {
+    const layers = (r.dataset.layers || '').split(/\s+/);
+    if (layers.some(l => ['L1','L2','L3'].includes(l))) counts.L1++;
+    if (layers.includes('L4')) counts.L4++;
+    if (layers.includes('L5')) counts.L5++;
+    if (layers.includes('L6')) counts.L6++;
+    if (layers.includes('L7')) counts.L7++;
+    if (layers.includes('L8')) counts.L8++;
+    if (layers.includes('ops')) counts.ops++;
+    if (r.classList.contains('high')) counts.critical++;
+  });
+  chips.forEach(c => {
+    const f = c.dataset.filter;
+    if (f === 'all' || !(f in counts)) return;
+    const span = document.createElement('span');
+    span.className = 'chip-n';
+    span.textContent = counts[f];
+    c.appendChild(span);
+  });
+
+  function applyFilter(f) {
+    let visible = 0;
+    rows.forEach(r => {
+      const layers = (r.dataset.layers || '').split(/\s+/);
+      let show;
+      if (f === 'all') show = true;
+      else if (f === 'critical') show = r.classList.contains('high');
+      else if (f === 'L1') show = layers.some(l => ['L1','L2','L3'].includes(l));
+      else show = layers.includes(f);
+      r.classList.toggle('row-hidden', !show);
+      if (show) visible++;
+    });
+    if (empty) empty.classList.toggle('show', visible === 0);
+  }
+
+  chips.forEach(c => c.addEventListener('click', () => {
+    chips.forEach(o => o.classList.remove('active'));
+    c.classList.add('active');
+    applyFilter(c.dataset.filter);
+  }));
+})();
+
+// 3) Phases checklist with localStorage
+(function () {
+  const KEY = 'ctx-tower:phases-v1';
+  const boxes = document.querySelectorAll('#phasesGrid input[type=checkbox][data-task]');
+  const ppDone = document.getElementById('ppDone');
+  const ppPhase = document.getElementById('ppPhase');
+  const ppFill = document.getElementById('ppFill');
+  const resetBtn = document.getElementById('phasesReset');
+  if (!boxes.length || !ppDone) return;
+
+  let state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+
+  function refresh() {
+    let done = 0;
+    const phaseTotals = { 1: 0, 2: 0, 3: 0 };
+    const phaseDone = { 1: 0, 2: 0, 3: 0 };
+    boxes.forEach(b => {
+      const phase = parseInt(b.dataset.task.charAt(1), 10);
+      phaseTotals[phase]++;
+      if (b.checked) {
+        done++;
+        phaseDone[phase]++;
+        b.closest('.phase-task').classList.add('done');
+      } else {
+        b.closest('.phase-task').classList.remove('done');
+      }
+    });
+    let highestComplete = 0;
+    for (let i = 1; i <= 3; i++) {
+      if (phaseDone[i] === phaseTotals[i] && phaseTotals[i] > 0) highestComplete = i;
+    }
+    ppDone.textContent = done;
+    ppPhase.textContent = highestComplete;
+    ppFill.style.width = (done / boxes.length * 100).toFixed(1) + '%';
+  }
+
+  boxes.forEach(b => {
+    b.checked = !!state[b.dataset.task];
+    b.addEventListener('change', () => {
+      state[b.dataset.task] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      refresh();
+    });
+  });
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      boxes.forEach(b => { b.checked = false; });
+      state = {};
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      refresh();
+    });
+  }
+  refresh();
+})();
+
+// 5) Dataflow SVG — clickable nodes
+(function () {
+  document.querySelectorAll('.dataflow-node[data-target]').forEach(n => {
+    const t = n.getAttribute('data-target');
+    if (!t) { n.style.cursor = 'default'; return; }
+    n.addEventListener('click', () => {
+      const el = document.querySelector(t);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+})();
 </script>
 
 </body>
