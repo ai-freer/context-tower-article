@@ -1,7 +1,7 @@
 #!/bin/bash
-# 用 main agent 的真实 XDG 路径 + 跨 collection 复现
+# 用 agent-A 的真实 XDG 路径 + 跨 collection 复现
 set -u
-AGENT="main"
+AGENT="agent-A"
 
 export XDG_CACHE_HOME="/root/.openclaw/agents/${AGENT}/qmd/xdg-cache"
 export XDG_CONFIG_HOME="/root/.openclaw/agents/${AGENT}/qmd/xdg-config"
@@ -25,7 +25,7 @@ QUERY="九层塔架构"
 echo "============================================================"
 echo "完整 collection 列表（按 plugin 多 collection 路径调用）"
 echo "============================================================"
-for col in custom-1-main custom-2-main custom-3-main memory-root-main memory-dir-main sessions-main; do
+for col in custom-1-agent-A custom-2-agent-A custom-3-agent-A memory-root-agent-A memory-dir-agent-A sessions-agent-A; do
   echo "--- collection=$col ---"
   out=$(/usr/local/bin/qmd query "$QUERY" --json -n 8 -c "$col" --timeout 60 2>&1)
   ec=$?

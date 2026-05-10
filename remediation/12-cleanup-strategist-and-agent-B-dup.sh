@@ -1,36 +1,36 @@
 #!/bin/bash
-# 清理 the-strategist/（无 cron 引用）+ 迁移 workspace-lisa 副本到 main workspace
+# 清理 the-strategist/（无 cron 引用）+ 迁移 workspace-agent-B 副本到 agent-A workspace
 # 同时把 4 个 reflection cron 改成绝对路径，杜绝复发
 set -uo pipefail
 
 WS="/root/.openclaw/workspace"
 SI="$WS/memory/self-improving"
-ARCHIVE="$WS/memory/.archive/strategist-and-lisa-dup-$(date -u +%Y%m%dT%H%M%SZ)"
+ARCHIVE="$WS/memory/.archive/strategist-and-agent-B-dup-$(date -u +%Y%m%dT%H%M%SZ)"
 
-echo "=== Step 2 续：清 the-strategist + lisa 副本 + cron 绝对路径 ==="
+echo "=== Step 2 续：清 the-strategist + agent-B 副本 + cron 绝对路径 ==="
 mkdir -p "$ARCHIVE"
 
 echo
-echo "--- A. backup the-strategist + workspace-lisa/.../lisa ---"
+echo "--- A. backup the-strategist + workspace-agent-B/.../agent-B ---"
 cp -a "$SI/the-strategist" "$ARCHIVE/the-strategist"
-cp -a /root/.openclaw/workspace-lisa/memory/self-improving "$ARCHIVE/workspace-lisa-self-improving"
+cp -a /root/.openclaw/workspace-agent-B/memory/self-improving "$ARCHIVE/workspace-agent-B-self-improving"
 echo "✅ backup → $ARCHIVE"
 
 echo
-echo "--- B. 把 workspace-lisa 副本里 5/8 内容追加到 main 的 lisa/hot.md 和 corrections.md ---"
-SRC_HOT="/root/.openclaw/workspace-lisa/memory/self-improving/lisa/hot.md"
-SRC_COR="/root/.openclaw/workspace-lisa/memory/self-improving/lisa/corrections.md"
-DST_HOT="$SI/lisa/hot.md"
-DST_COR="$SI/lisa/corrections.md"
+echo "--- B. 把 workspace-agent-B 副本里 5/8 内容追加到 agent-A 的 agent-B/hot.md 和 corrections.md ---"
+SRC_HOT="/root/.openclaw/workspace-agent-B/memory/self-improving/agent-B/hot.md"
+SRC_COR="/root/.openclaw/workspace-agent-B/memory/self-improving/agent-B/corrections.md"
+DST_HOT="$SI/agent-B/hot.md"
+DST_COR="$SI/agent-B/corrections.md"
 TS=$(date -u +%Y%m%dT%H%M%SZ)
-MARK="<!-- workspace-lisa-dup-merge $TS -->"
+MARK="<!-- workspace-agent-B-dup-merge $TS -->"
 
 if [ -s "$SRC_HOT" ]; then
   cat >> "$DST_HOT" <<EOF
 
 
 $MARK begin
-## $(date +%Y-%m-%d) Migrated from workspace-lisa副本
+## $(date +%Y-%m-%d) Migrated from workspace-agent-B副本
 
 EOF
   cat "$SRC_HOT" >> "$DST_HOT"
@@ -44,7 +44,7 @@ if [ -s "$SRC_COR" ]; then
 
 
 $MARK begin
-## $(date +%Y-%m-%d) Migrated from workspace-lisa副本
+## $(date +%Y-%m-%d) Migrated from workspace-agent-B副本
 
 EOF
   cat "$SRC_COR" >> "$DST_COR"
@@ -54,8 +54,8 @@ EOF
 fi
 
 echo
-echo "--- C. 删除 workspace-lisa 副本 + the-strategist ---"
-rm -rf /root/.openclaw/workspace-lisa/memory/self-improving
+echo "--- C. 删除 workspace-agent-B 副本 + the-strategist ---"
+rm -rf /root/.openclaw/workspace-agent-B/memory/self-improving
 rm -rf "$SI/the-strategist"
 echo "✅ removed both"
 
@@ -64,10 +64,10 @@ echo "--- D. 改 4 个 reflection cron 用绝对路径 ---"
 # 使用前请把下面 4 个 <CRON_ID_*> 替换为你环境里实际的 cron UUID
 # 通过 `openclaw cron list --json | jq -r '.[] | select(.name | startswith("self-improving-daily-reflection")) | "\(.id) \(.agentId)"'` 查出
 declare -A CRONS=(
-  [<CRON_ID_LISA>]=lisa
-  [<CRON_ID_DOUBAO>]=doubao
-  [<CRON_ID_NYX>]=nyx
-  [<CRON_ID_MAIN>]=main
+  [<CRON_ID_LISA>]=agent-B
+  [<CRON_ID_DOUBAO>]=agent-C
+  [<CRON_ID_NYX>]=agent-D
+  [<CRON_ID_MAIN>]=agent-A
 )
 
 for cron_id in "${!CRONS[@]}"; do

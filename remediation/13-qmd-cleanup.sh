@@ -8,7 +8,7 @@ echo "时间: $(date -u +%FT%TZ)"
 echo
 
 # 对每个 agent 配置完整 env 后跑 qmd cleanup
-for agent in main lisa doubao nyx; do
+for agent in agent-A-B agent-C agent-D; do
   CACHE="/root/.openclaw/agents/${agent}/qmd/xdg-cache"
   CONFIG="/root/.openclaw/agents/${agent}/qmd/xdg-config"
   DB="$CACHE/qmd/index.sqlite"

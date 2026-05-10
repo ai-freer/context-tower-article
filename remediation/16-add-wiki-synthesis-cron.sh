@@ -4,7 +4,7 @@ set -uo pipefail
 
 PROMPT="周度 wiki synthesis（自动触发，不需要用户确认）。
 
-你今天 20:00 已经做完 weekly-signal-digest，将信号汇总写到了 memory/daily/$(date +%Y-%m-%d).md 或 self-improving/lisa/signals.md。
+你今天 20:00 已经做完 weekly-signal-digest，将信号汇总写到了 memory/daily/$(date +%Y-%m-%d).md 或 self-improving/agent-B/signals.md。
 
 现在做下一步：从本周采集到的信号 + 本周 daily memory 的关键内容里，提炼 1-2 个 emerging concept / theme，写成 wiki synthesis 页面。
 
@@ -34,7 +34,7 @@ fi
 /usr/bin/openclaw cron add \
   --name "weekly-wiki-synthesis" \
   --cron "0 22 * * 0" \
-  --agent lisa \
+  --agent agent-B \
   --message "$PROMPT" \
   --tz "Asia/Shanghai" \
   --description "周度 wiki synthesis：从信号汇总提炼 1-2 emerging concepts → wiki apply synthesis" \

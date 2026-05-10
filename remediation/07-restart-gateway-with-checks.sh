@@ -12,7 +12,7 @@ echo
 
 echo "=== 1. PRE-RESTART snapshot ==="
 PRE_PID=$(systemctl show -p MainPID --value openclaw-gateway-root.service)
-echo "gateway main pid: $PRE_PID"
+echo "gateway agent-A pid: $PRE_PID"
 PRE_MSGS=$(sqlite3 /root/.openclaw/lcm.db "SELECT COUNT(*) FROM messages")
 PRE_CONVS=$(sqlite3 /root/.openclaw/lcm.db "SELECT COUNT(*) FROM conversations")
 PRE_QMD_ERRS=$(sqlite3 /root/.openclaw/lcm.db "SELECT COUNT(*) FROM messages WHERE role='tool' AND content LIKE '%qmd query returned invalid JSON%' AND created_at > datetime('now','-1 day')")

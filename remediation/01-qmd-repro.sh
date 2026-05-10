@@ -1,9 +1,9 @@
 #!/bin/bash
-# 用 main agent 的真实 QMD home 复现 active-memory 的查询场景
+# 用 agent-A 的真实 QMD home 复现 active-memory 的查询场景
 # 跑一组 query，看哪些会触发 "JSON not array" 错误
 
 set -u
-AGENT="main"
+AGENT="agent-A"
 QUERIES=(
   "memory system audit"
   "recent project status"

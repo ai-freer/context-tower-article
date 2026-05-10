@@ -915,7 +915,7 @@ h2:hover .anchor, h3:hover .anchor { opacity: 0.6; }
 <li>memoryFlush / safeguard compaction 是 fallback safety rail，不是替代 context engine 的主机制</li>
 <li>长任务应该外化 plan 到文件，而不是只存在 context 里</li>
 <li class="critical"><strong>必须显式绑定 contextEngine slot</strong>：<code>plugins.slots.contextEngine</code> 不配置时，系统不会报错，只是悄悄回退到 legacy 截断引擎。这是个安静失败模式——文件 size 不增长、WAL 不写入是排查信号</li>
-<li class="critical"><strong>LLM 摘要前必须 redact secrets</strong>：摘要器（doubao / lite 类小模型）原样保留源消息里的 API key / bot token。这些 secrets 一旦被写入 summary，会进入 FTS 索引、被 vector embedding 收录，并在下次组装 context 时再次被注入新 prompt——形成持续放大。最佳实践是在调 LLM <strong>之前</strong>做 regex redaction</li>
+<li class="critical"><strong>LLM 摘要前必须 redact secrets</strong>：摘要器（agent-C / lite 类小模型）原样保留源消息里的 API key / bot token。这些 secrets 一旦被写入 summary，会进入 FTS 索引、被 vector embedding 收录，并在下次组装 context 时再次被注入新 prompt——形成持续放大。最佳实践是在调 LLM <strong>之前</strong>做 regex redaction</li>
 <li class="pitfall"><strong>短源跳过 LLM</strong>：源 &lt; 200 tokens 直接 store-as-is，不调 summarizer。否则会出现"摘要 = timestamp 包装 + 原文"的反向膨胀，既浪费 LLM 调用又虚耗 token</li>
 </ul>
 
@@ -1002,7 +1002,7 @@ Dreaming 会把 heartbeat、maintenance、compaction 通知等系统噪声纳入
 <li>错误记录 → 信号积累 → 规则晋升：不是一次犯错就改规则，而是重复出现才晋升</li>
 <li>shared-rules 跨 Agent 共享：一个 Agent 的教训，所有 Agent 受益</li>
 <li>有 reviewer 和 threshold，防止规则膨胀</li>
-<li class="critical"><strong>agent identity 用唯一规范</strong>：自我迭代目录用 agent id（<code>main</code> / <code>lisa</code> / ...），不用 persona name（<code>Lolita</code> / <code>Lisa</code> 这类用户自定义显示名）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping</li>
+<li class="critical"><strong>agent identity 用唯一规范</strong>：自我迭代目录用 agent id（<code>agent-A</code> / <code>agent-B</code> / ...），不用 persona name（<code>Persona-A</code> / <code>Persona-B</code> 这类用户自定义显示名）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping</li>
 <li class="critical"><strong>cron payload 用绝对路径</strong>：周期性自反思任务里写 <code>memory/self-improving/X/hot.md</code> 这种相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用 <code>/root/.openclaw/workspace/memory/self-improving/&lt;id&gt;/...</code> 的绝对路径</li>
 <li><strong>patrol 用枚举白名单</strong>：<code>KNOWN_AGENTS</code> + <code>KNOWN_FILES</code> 列表化，扫到不在白名单的就报警。这能在第 1 周内发现命名漂移、拼写错误（如 <code>corrrections.md</code> 多打一个 r）、persona vs agent-id 大小写分裂</li>
 </ul>
@@ -1144,7 +1144,7 @@ L9 技能进化（workflow → skill）
 <tr><td>8</td><td>短源做 summary 反而变长</td><td>L6</td><td>源 &lt; 200 tokens 直接 return 原文，避免"摘要 = timestamp + 原文"的反向膨胀</td></tr>
 <tr><td>9</td><td>session 内部消息（cron / subagent）污染 corpus</td><td>L6 / L7</td><td><code>ignoreSessionPatterns</code> 在源头排除，比在 Dreaming 后清理高效</td></tr>
 <tr><td>10</td><td>post-sweep watchdog 投递失败 → 无人知</td><td>L7</td><td>watchdog 自身也要监控；delivery 失败要降级到 local log + 告警</td></tr>
-<tr><td>11</td><td>persona 名 vs agent id 双轨写入造成目录分裂</td><td>L8</td><td>全局只用 agent id（main / lisa / ...）；persona name 不进文件系统</td></tr>
+<tr><td>11</td><td>persona 名 vs agent id 双轨写入造成目录分裂</td><td>L8</td><td>全局只用 agent id（agent-A / agent-B / ...）；persona name 不进文件系统</td></tr>
 <tr><td>12</td><td>cron payload 用相对路径在不同 cwd 下落到不同 workspace</td><td>L8</td><td>自反思 cron 一律用绝对路径</td></tr>
 <tr><td>13</td><td>per-agent 索引累积 orphan 向量</td><td>L4</td><td>周期性 cleanup，否则 sqlite 体积膨胀（实测可达 80%+ 都是 orphan）</td></tr>
 <tr><td>14</td><td>sudoers 文件名带 <code>.</code> 被默认忽略</td><td>运维</td><td><code>/etc/sudoers.d/X.tmp</code> 不生效；要用 <code>X</code> 不带后缀</td></tr>

@@ -2,8 +2,8 @@
 
 - Date: 2026-05-06
 - Purpose: 脱敏后，将当前 OpenClaw 上下文管理实践抽象成一篇可公开的架构/教程文章。
-- Intended lead writer: Lisa
-- Engineering validation contributors: peer agents (e.g. nyx / doubao)
+- Intended lead writer: Persona-B
+- Engineering validation contributors: peer agents (e.g. agent-D / agent-C)
 
 ## 1. 文章定位
 
@@ -223,7 +223,7 @@ memory/
 - **绑定 context engine slot**：必须在配置里显式 `plugins.slots.contextEngine: "<engine-id>"`，否则系统默认使用 legacy 截断引擎（简单 FIFO 截断），即使 plugin 安装了也不会被加载。这是一个安静失败模式——文件 size 不增长、wal 不写入是排查信号。
 - **运行时上下文生存 ≠ 持久化记忆**：context engine 解决"当前长会话怎样继续保持连贯"；durable memory（L3）解决"跨 session 长期事实如何积累"。memoryFlush 是后者的 fallback safety rail，不是 L6 的主机制。
 - **ignoreSessionPatterns**：把 cron / subagent 等内部 session 排除在摄入之外，从源头减少噪声进入 DAG 和下游 L7 整理。
-- **🔒 LLM 摘要前 redact secrets**：摘要器（doubao/lite 类小模型）会原样保留源消息里的 API key / bot token 等敏感字符串。这些 secrets 一旦进入 summaries 表就会被 FTS 索引、被 vector embedding 收录、并在下次 context assembly 时再次注入新 prompt——形成持续放大。**最佳实践**：在调 summarize LLM **之前**对源做 regex redaction（`sk-[A-Za-z0-9_-]{32,}` / Bearer / `\d{8,12}:[token]` 等），让 LLM 永远见不到原始 secret。
+- **🔒 LLM 摘要前 redact secrets**：摘要器（agent-C/lite 类小模型）会原样保留源消息里的 API key / bot token 等敏感字符串。这些 secrets 一旦进入 summaries 表就会被 FTS 索引、被 vector embedding 收录、并在下次 context assembly 时再次注入新 prompt——形成持续放大。**最佳实践**：在调 summarize LLM **之前**对源做 regex redaction（`sk-[A-Za-z0-9_-]{32,}` / Bearer / `\d{8,12}:[token]` 等），让 LLM 永远见不到原始 secret。
 - **短源跳过 LLM**：源 < 200 tokens 直接 store-as-is，不调 summarizer。否则会出现"摘要比源还长"的反向情况（LLM 只是把原文加 timestamp 包装），既浪费 LLM 调用又虚耗 token。
 
 常见坑：
@@ -295,16 +295,16 @@ memory/self-improving/
 
 最佳实践：
 
-- **agent identity mapping 唯一规范**：自我迭代目录用 agent id（如 `main` / `lisa` / `doubao` / `nyx`），不用 persona name（如 `Lolita`）。所有跨进程协作（cron、patrol、promotion、reflection）都按这同一份 mapping 走。
+- **agent identity mapping 唯一规范**：自我迭代目录用 agent id（如 `agent-A` / `agent-B` / `agent-C` / `agent-D`），不用 persona name（如 `Persona-A`）。所有跨进程协作（cron、patrol、promotion、reflection）都按这同一份 mapping 走。
 - **cron payload 用绝对路径**：周期性自反思任务的提示词不要写相对路径 `memory/self-improving/X/hot.md`——cwd 取决于 agent workspace，会把同一 agent 的内容写到不同 workspace 的同名目录里造成 split。统一用 `/root/.openclaw/workspace/memory/self-improving/<agent-id>/...` 的绝对路径。
-- **patrol 用枚举白名单**：`KNOWN_AGENTS=("lisa" "main" "doubao" "nyx")` + `KNOWN_FILES=("hot.md" "corrections.md" "signals.md" "README.md")`，扫到不在白名单的就报"未知 agent 目录" / "未知文件"。这能在第 1 周内发现命名漂移、拼写错误（如 `corrrections.md` 三个 r）、persona vs agent-id 大小写分裂等。
+- **patrol 用枚举白名单**：`KNOWN_AGENTS=("agent-B" "agent-A" "agent-C" "agent-D")` + `KNOWN_FILES=("hot.md" "corrections.md" "signals.md" "README.md")`，扫到不在白名单的就报"未知 agent 目录" / "未知文件"。这能在第 1 周内发现命名漂移、拼写错误（如 `corrrections.md` 三个 r）、persona vs agent-id 大小写分裂等。
 
 常见坑：
 
 - 目录命名/agent identity mapping 不一致，导致扫描漏项。
 - 把一次性偏好过早晋升为全局规则。
 - 没有 reviewer 或 threshold，规则膨胀。
-- **persona vs agent-id 双轨命名**：当 agent 有 persona name（如 Lolita）和 system identifier（如 main）时，若不显式约定唯一规范，cron / 自反思 / patrol 之间会各自用不同名字写入，最终在文件系统上分裂为多个目录。
+- **persona vs agent-id 双轨命名**：当 agent 有 persona name（如 Persona-A）和 system identifier（如 agent-A）时，若不显式约定唯一规范，cron / 自反思 / patrol 之间会各自用不同名字写入，最终在文件系统上分裂为多个目录。
 
 ### L9 能力进化层：把经验变成技能
 
@@ -379,7 +379,7 @@ L1 Identity Injection     身份 / 用户 / persona
 
 > 好的 Agent 不是“记得更多”，而是“知道什么该记、什么时候召回、何时压缩、如何清噪、怎样从经验中进化”。
 
-## 8. Lisa 主笔注意事项
+## 8. Persona-B 主笔注意事项
 
 - 语气：清晰、结构化、有叙事感；不要像内部审计报告。
 - 避免过多内部路径和事故细节。
@@ -387,9 +387,9 @@ L1 Identity Injection     身份 / 用户 / persona
 - 面向读者：OpenClaw 进阶用户 + AI Agent builder。
 - 每层给一个“为什么需要它”的直觉例子。
 
-## 9. doubao 可补充内容
+## 9. agent-C 可补充内容
 
-建议 doubao agent 补：
+建议 agent-C agent 补：
 
 1. 脱敏后的配置片段。
 2. post-dreaming watchdog 的伪代码或流程图。
@@ -397,9 +397,9 @@ L1 Identity Injection     身份 / 用户 / persona
 4. promotion stats 如何作为健康指标。
 5. active-memory 质量过滤建议。
 
-## 10. nyx 可补充内容
+## 10. agent-D 可补充内容
 
-nyx agent 可补：
+agent-D agent 可补：
 
 1. 从审计报告抽象出的系统健康矩阵。
 2. 九层之间的数据流。
@@ -509,7 +509,7 @@ The article should no longer imply that compaction memoryFlush is the main sessi
 | 8 | 短源做 summary 反而变长 | L6 | 源 < 200 tokens 直接 return 原文，不要走 LLM——避免"摘要 = timestamp + 原文"的反向膨胀 |
 | 9 | session 内部消息（cron/subagent）污染 corpus | L6/L7 | `ignoreSessionPatterns` 在源头排除，比在 Dreaming 后清理高效 |
 | 10 | post-sweep watchdog 投递失败 → 无人知 | L7 | watchdog 自身也要监控；delivery 失败要降级到 local log + 告警 |
-| 11 | persona 名 vs agent id 双轨写入造成目录分裂 | L8 | 全局只用 agent id（main/lisa/...）；persona name 不进文件系统 |
+| 11 | persona 名 vs agent id 双轨写入造成目录分裂 | L8 | 全局只用 agent id（agent-A/agent-B/...）；persona name 不进文件系统 |
 | 12 | cron payload 写相对路径在不同 cwd 下落到不同 workspace | L8 | 自反思 cron 一律用绝对路径 `/root/.openclaw/workspace/memory/self-improving/<id>/...` |
 | 13 | qmd / per-agent index 累积 orphan 向量 | L4 | 周期性 `qmd cleanup`，否则 sqlite 体积持续膨胀（实测可达 80%+ 是 orphan） |
 | 14 | sudoers 文件名带 `.` 被默认忽略 | 运维 | `/etc/sudoers.d/X.tmp` 不生效；要用 `X` 不带后缀，否则 `#includedir` 默认跳过 |

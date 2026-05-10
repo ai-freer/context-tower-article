@@ -50,9 +50,9 @@ fi
   --name "weekly-lossless-claw-health" \
   --cron "30 9 * * 1" \
   --tz "Asia/Shanghai" \
-  --agent lisa \
+  --agent agent-B \
   --message "$PROMPT" \
-  --description "周一 09:30 lisa 跑：lcm.db 健康指标 + 报告 + 异常告警" \
+  --description "周一 09:30 agent-B 跑：lcm.db 健康指标 + 报告 + 异常告警" \
   --announce \
   --channel "telegram" \
   --to "$TELEGRAM_GROUP_ID" \

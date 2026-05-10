@@ -8,7 +8,7 @@ const cases = [
   { name: "valid JSON array",
     stdout: '[{"docid":"#abc","score":1,"file":"x.md"}]', stderr: '' },
   { name: "warning + JSON array (single warn)",
-    stdout: "Warning: collection 'custom-1-main' not found, skipping\n[{\"docid\":\"#abc\",\"score\":1,\"file\":\"x.md\"}]", stderr: '' },
+    stdout: "Warning: collection 'custom-1-agent-A' not found, skipping\n[{\"docid\":\"#abc\",\"score\":1,\"file\":\"x.md\"}]", stderr: '' },
   { name: "two warnings + JSON array",
     stdout: "Warning: collection 'a' not found, skipping\nWarning: collection 'b' not found, skipping\n[{\"docid\":\"#abc\",\"score\":1,\"file\":\"x.md\"}]", stderr: '' },
   { name: "no results",

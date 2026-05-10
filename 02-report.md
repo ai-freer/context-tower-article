@@ -196,7 +196,7 @@ memory/
 - memoryFlush / safeguard compaction 是 fallback safety rail，不是替代 context engine 的主机制
 - 长任务应该外化 plan 到文件，而不是只存在 context 里
 - **必须显式绑定 contextEngine slot**：`plugins.slots.contextEngine` 不配置时，系统不会报错，只是悄悄回退到 legacy 截断引擎。这是个安静失败模式——文件 size 不增长、WAL 不写入是排查信号
-- **LLM 摘要前必须 redact secrets**：摘要器（doubao/lite 类小模型）原样保留源消息里的 API key / bot token。这些 secrets 一旦被写入 summary，会进入 FTS 索引、被 vector embedding 收录，并在下次组装 context 时再次被注入新 prompt——形成持续放大。最佳实践是在调 LLM **之前**做 regex redaction
+- **LLM 摘要前必须 redact secrets**：摘要器（agent-C/lite 类小模型）原样保留源消息里的 API key / bot token。这些 secrets 一旦被写入 summary，会进入 FTS 索引、被 vector embedding 收录，并在下次组装 context 时再次被注入新 prompt——形成持续放大。最佳实践是在调 LLM **之前**做 regex redaction
 - **短源跳过 LLM**：源 < 200 tokens 直接 store-as-is，不调 summarizer。否则会出现"摘要 = timestamp 包装 + 原文"的反向膨胀，既浪费 LLM 调用又虚耗 token
 
 **工程 Insight**：
@@ -263,7 +263,7 @@ memory/self-improving/
 - 错误记录 → 信号积累 → 规则晋升：不是一次犯错就改规则，而是重复出现才晋升
 - shared-rules 跨 Agent 共享：一个 Agent 的教训，所有 Agent 受益
 - 有 reviewer 和 threshold，防止规则膨胀
-- **agent identity 用唯一规范**：自我迭代目录用 agent id（`main` / `lisa` / ...），不用 persona name（`Lolita` / `Lisa` 这类用户自定义显示名）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping
+- **agent identity 用唯一规范**：自我迭代目录用 agent id（`agent-A` / `agent-B` / ...），不用 persona name（`Persona-A` / `Persona-B` 这类用户自定义显示名）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping
 - **cron payload 用绝对路径**：周期性自反思任务里写 `memory/self-improving/X/hot.md` 这种相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用 `/root/.openclaw/workspace/memory/self-improving/<id>/...` 的绝对路径
 - **patrol 用枚举白名单**：`KNOWN_AGENTS` + `KNOWN_FILES` 列表化，扫到不在白名单的就报警。这能在第 1 周内发现命名漂移、拼写错误（如 `corrrections.md` 多打一个 r）、persona vs agent-id 大小写分裂
 
@@ -388,7 +388,7 @@ L9 技能进化（workflow → skill）
 | 8 | 短源做 summary 反而变长 | L6 | 源 < 200 tokens 直接 return 原文，避免"摘要 = timestamp + 原文"的反向膨胀 |
 | 9 | session 内部消息（cron/subagent）污染 corpus | L6/L7 | `ignoreSessionPatterns` 在源头排除，比在 Dreaming 后清理高效 |
 | 10 | post-sweep watchdog 投递失败 → 无人知 | L7 | watchdog 自身也要监控；delivery 失败要降级到 local log + 告警 |
-| 11 | persona 名 vs agent id 双轨写入造成目录分裂 | L8 | 全局只用 agent id（main/lisa/...）；persona name 不进文件系统 |
+| 11 | persona 名 vs agent id 双轨写入造成目录分裂 | L8 | 全局只用 agent id（agent-A/agent-B/...）；persona name 不进文件系统 |
 | 12 | cron payload 用相对路径在不同 cwd 下落到不同 workspace | L8 | 自反思 cron 一律用绝对路径 |
 | 13 | per-agent 索引累积 orphan 向量 | L4 | 周期性 cleanup，否则 sqlite 体积膨胀（实测可达 80%+ 都是 orphan） |
 | 14 | sudoers 文件名带 `.` 被默认忽略 | 运维 | `/etc/sudoers.d/X.tmp` 不生效；要用 `X` 不带后缀 |

@@ -1,12 +1,12 @@
 #!/bin/bash
-# 重跑 nyx 的 qmd cleanup（之前那次未完成）
+# 重跑 agent-D 的 qmd cleanup（之前那次未完成）
 set -uo pipefail
 
-CACHE="/root/.openclaw/agents/nyx/qmd/xdg-cache"
-CONFIG="/root/.openclaw/agents/nyx/qmd/xdg-config"
+CACHE="/root/.openclaw/agents/agent-D/qmd/xdg-cache"
+CONFIG="/root/.openclaw/agents/agent-D/qmd/xdg-config"
 DB="$CACHE/qmd/index.sqlite"
 
-echo "=== nyx cleanup retry ==="
+echo "=== agent-D cleanup retry ==="
 PRE_SIZE=$(stat -c%s "$DB")
 PRE_VECS=$(sqlite3 "$DB" "SELECT COUNT(*) FROM content_vectors;")
 PRE_ORPH=$(sqlite3 "$DB" "SELECT COUNT(*) FROM content_vectors WHERE hash NOT IN (SELECT hash FROM content);")

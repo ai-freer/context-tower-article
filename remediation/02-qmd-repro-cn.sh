@@ -1,7 +1,7 @@
 #!/bin/bash
 # 复现真实失败的中文 query
 set -u
-AGENT="main"
+AGENT="agent-A"
 
 export XDG_CACHE_HOME="/root/.openclaw/agents/${AGENT}/qmd/xdg-cache"
 export QMD_OPENAI_API_KEY=dummy
@@ -21,7 +21,7 @@ QUERIES=(
   "context engineering"
   "MEMORY.md slimming"
   "active memory recall"
-  "doubao seed"
+  "agent-C seed"
   "embedding coverage"
 )
 
