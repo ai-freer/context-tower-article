@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>上下文管理九层塔 · OpenClaw Context Engineering</title>
+<meta name="description" content="OpenClaw Agent 上下文管理九层塔架构 — 报告、审计、写作输入包">
+<style>
+:root {
+  --fg: #1f2328; --fg-muted: #57606a; --fg-soft: #6e7781;
+  --bg: #fdfdfb; --bg-soft: #f6f5f0; --border-soft: #ece8dc;
+  --accent: #b8431e; --accent-soft: #f3d9cf;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e6e1d6; --fg-muted: #a8a395; --fg-soft: #847f72;
+    --bg: #1a1a18; --bg-soft: #232220; --border-soft: #2e2c28;
+    --accent: #e07a52; --accent-soft: #5a3526;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--fg);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px 96px;
+}
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+h1 {
+  font-size: 30px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.lead {
+  font-size: 17px;
+  color: var(--fg-muted);
+  margin: 0 0 36px;
+  line-height: 1.6;
+}
+.card {
+  display: block;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--bg-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.card.primary {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  border-width: 1px 1px 1px 4px;
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.card-num {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.card-title {
+  font-size: 17px;
+  font-weight: 600;
+  flex: 1;
+}
+.card-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--bg);
+  color: var(--fg-soft);
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--border-soft);
+}
+.card.primary .card-tag {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.card-desc {
+  font-size: 14.5px;
+  color: var(--fg-muted);
+  margin: 0;
+}
+.divider {
+  margin: 36px 0 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+}
+footer {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 13px;
+  color: var(--fg-soft);
+}
+footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="eyebrow">OpenClaw · Context Engineering</p>
+<h1>上下文管理九层塔</h1>
+<p class="lead">一个真正长期运行的 AI Agent，需要的不是更大的上下文窗口，而是一套完整的上下文治理体系。本仓库是该架构的报告、审计与写作输入包的集合。</p>
+
+<div class="divider">面向读者</div>
+
+<a class="card primary" href="03-report.html">
+<div class="card-head">
+<span class="card-num">03</span>
+<span class="card-title">报告 · HTML 版（推荐）</span>
+<span class="card-tag">阅读</span>
+</div>
+<p class="card-desc">完整的九层塔架构教程，含 4 个核心观点、L1-L9 详解、三层 vs 九层对比、源码层适配最佳实践、14 个最容易踩的坑。带目录导航 / 阅读进度 / 自动 light-dark 主题。</p>
+</a>
+
+<div class="divider">面向贡献者 / 工程师</div>
+
+<a class="card" href="https://github.com/ai-freer/context-tower-article/blob/main/02-report.md">
+<div class="card-head">
+<span class="card-num">02</span>
+<span class="card-title">报告 · Markdown 源</span>
+<span class="card-tag">.md</span>
+</div>
+<p class="card-desc">报告 v2 的 markdown 源文件。fork / 改写 / 引用都从这里开始。</p>
+</a>
+
+<a class="card" href="https://github.com/ai-freer/context-tower-article/blob/main/01-brief.md">
+<div class="card-head">
+<span class="card-num">01</span>
+<span class="card-title">写作输入包（Brief）</span>
+<span class="card-tag">.md</span>
+</div>
+<p class="card-desc">报告动笔前的素材包：文章定位、脱敏原则、9 层细化模板、上游适配、踩坑清单。理解作者写作思路从这里看。</p>
+</a>
+
+<a class="card" href="https://github.com/ai-freer/context-tower-article/blob/main/00-audit.md">
+<div class="card-head">
+<span class="card-num">00</span>
+<span class="card-title">系统审计报告</span>
+<span class="card-tag">.md</span>
+</div>
+<p class="card-desc">报告背后的实际 OpenClaw 部署审计 — 完整时间线、修复过程、健康矩阵。包含 2026-05-09/10 的修复 session 全记录（patch、cron、lcm.db redaction 等）。</p>
+</a>
+
+<div class="divider">配套</div>
+
+<a class="card" href="https://github.com/ai-freer/context-tower-article/tree/main/remediation">
+<div class="card-head">
+<span class="card-num">·</span>
+<span class="card-title">remediation/ — 21 个 idempotent 脚本</span>
+<span class="card-tag">.sh / .js</span>
+</div>
+<p class="card-desc">修复过程中产生的可重跑脚本：qmd defensive parse patch、lossless-claw secret redaction、lolita 目录合并、qmd cleanup、wiki synthesis cron 等。可作类似系统的迁移参考。</p>
+</a>
+
+<footer>
+基于 OpenClaw 多 Agent 环境近一个月的实际运行经验。九层塔不是一次性设计出来的，而是在解决一个又一个实际问题的过程中逐步演化而成。
+<br><br>
+源码 <a href="https://github.com/ai-freer/context-tower-article">ai-freer/context-tower-article</a>
+</footer>
+</div>
+</body>
+</html>
