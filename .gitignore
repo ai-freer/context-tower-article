@@ -6,3 +6,6 @@
 # Not suitable for public consumption; backup at memory/shared/audits/
 00-audit.md
 .git.pre-filter-repo-*/
+
+# Internal QMD final audit link — canonical copy lives in memory/shared/audits/
+00-qmd-final-audit-2026-05-18.md

@@ -64,13 +64,31 @@
 
 **`_apply-qmd-defensive-parse.js`** 之外还有 **`_apply-lossless-claw-redact.sh`**
 （同样安装在 `~/workspace/patches/`），由 `apply-patches.sh` 在 gateway
-启动时调用，幂等。这俩 patch 一起构成 OpenClaw 修复体系的两个心脏。
+启动时调用，幂等。
+
+2026-05-19 最新追加：**`/root/.openclaw/workspace/patches/_apply-qmd-active-memory-hotpatches.py`**
+已经作为 `apply-patches.sh` 的 **Patch 14** 接入 `openclaw-gateway-root.service`
+的 `ExecStartPre`。它是 post-upgrade reinstaller，专门覆盖 2026-05-18/19
+QMD + active-memory 事故后的手工 dist hot patch：
+
+- `qmd-manager-*.js`：把 QMD query/search/list 调用恢复/验证为 `--json`，而不是 `--files`。
+- `qmd-manager-*.js`：恢复/验证 snippet fallback：`entry.snippet ?? entry.body ?? entry.excerpt ?? entry.text ?? entry.content ?? ""`。
+- `extensions/active-memory/index.js`：恢复/验证 direct `getMemorySearchManager` recall path。
+- `extensions/active-memory/index.js`：恢复/验证 P0.1 timeout guard，marker 包括 `directTimeoutMs`、`direct-timeout`、`timedOut`。
+
+这个脚本是幂等 + fail-closed：OpenClaw package upgrade / npm reinstall 覆盖
+`/usr/lib/node_modules/openclaw/dist/*` 后，下一次 gateway restart 会先运行它；
+如果上游代码结构变化导致 anchor 找不到，它会拒绝冒险修改并留下错误日志。
+
+这三个 reinstaller 一起构成 OpenClaw 修复体系的核心 patch 基础设施。
 
 ## 关键 backup 路径
 
 | 修改类型 | backup 位置 |
 |---|---|
-| qmd patch | `/usr/lib/node_modules/openclaw/dist/engine-qmd-DAYKPzcH.js.pre-defensive-patch-*` |
+| qmd defensive parse patch | `/usr/lib/node_modules/openclaw/dist/engine-qmd-DAYKPzcH.js.pre-defensive-patch-*` |
+| QMD `--json` / snippet hot patch | `/usr/lib/node_modules/openclaw/dist/qmd-manager-*.js.bak-qmd-json-snippet-*`（若 Patch 14 曾实际改写） |
+| active-memory direct / timeout hot patch | `/usr/lib/node_modules/openclaw/dist/extensions/active-memory/index.js.bak-direct-search-*`、`.bak-direct-timeout-p01-*`、`.bak-active-memory-direct-timeout-*` |
 | openclaw.json (qqbot 移除) | `/root/.openclaw/openclaw.json.bak` |
 | persona-A 目录 | `/root/.openclaw/workspace/memory/.archive/persona-A-merge-*` |
 | the-strategist + agent-B-dup | `/root/.openclaw/workspace/memory/.archive/strategist-and-agent-B-dup-*` |
@@ -79,9 +97,10 @@
 ## 何时复用
 
 - **OpenClaw 升级后** patch 失效（npm 覆盖）：`apply-patches.sh` 会在
-  ExecStartPre 自动重新应用 7 个 patch 中的 qmd-defensive-parse；本目录
-  的 `_apply-qmd-defensive-parse.js` 是其实现源。
-- **想验证 active-memory 有没有重新出 qmd JSON parse 错误**：08 脚本可重跑。
+  ExecStartPre 自动重新应用既有 patch；其中 Patch 14 会检查/安装 QMD `--json`
+  / snippet fallback 与 active-memory direct timeout hot patch。
+- **想验证 active-memory 有没有重新出 qmd JSON parse 错误**：08 脚本可重跑；
+  另可直接 grep production dist 中的 `direct-timeout` / `timedOut` / `entry.snippet ?? entry.body` marker。
 - **任何 OpenClaw 升级后 cron 重置**：12 脚本里的 4 个 reflection cron
   绝对路径配置可作模板。
 - **未来类似 persona-A/Persona-A 大小写分裂问题**：09+10 脚本是 backup-merge-delete
