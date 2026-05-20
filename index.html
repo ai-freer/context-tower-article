@@ -192,7 +192,7 @@ footer a { color: inherit; }
 <span class="card-title">报告 · HTML 版（推荐）</span>
 <span class="card-tag">阅读</span>
 </div>
-<p class="card-desc">完整的九层塔架构教程，含 4 个核心观点、L1-L9 详解、三层 vs 九层对比、源码层适配最佳实践、14 个最容易踩的坑。已补入最新 audit 的 QMD JSON/snippet 与 active-memory P0.1 timeout / Patch 14 reinstaller。带目录导航 / 阅读进度 / 自动 light-dark 主题。</p>
+<p class="card-desc">完整的九层塔架构教程，含 4 个核心观点、L1-L9 详解、三层 vs 九层对比、源码层适配最佳实践、14 个最容易踩的坑。补入了从最新运维审计中抽象出的 CLI 输出容错、snippet fallback、主动召回短超时和升级后自愈机制。带目录导航 / 阅读进度 / 自动 light-dark 主题。</p>
 </a>
 
 <div class="divider">面向贡献者 / 工程师</div>
@@ -220,10 +220,10 @@ footer a { color: inherit; }
 <a class="card" href="https://github.com/ai-freer/context-tower-article/tree/main/remediation">
 <div class="card-head">
 <span class="card-num">·</span>
-<span class="card-title">remediation/ — 21 个脚本 + post-upgrade reinstaller</span>
+<span class="card-title">remediation/ — 可重跑修复脚本与升级后自愈样例</span>
 <span class="card-tag">.sh / .js / .py</span>
 </div>
-<p class="card-desc">修复过程中产生的可重跑脚本：qmd defensive parse patch、lossless-claw secret redaction、persona-A 目录合并、qmd cleanup、wiki synthesis cron，以及最新接入 apply-patches.sh Patch 14 的 QMD / active-memory post-upgrade reinstaller。可作类似系统的迁移参考。</p>
+<p class="card-desc">修复过程中沉淀的可重跑脚本：检索输出容错、摘要前敏感信息清理、目录合并、索引清理、周期任务健康检查，以及升级后自动检查并重打关键适配的 reinstaller 样例。可作类似系统的迁移参考。</p>
 </a>
 
 <footer>

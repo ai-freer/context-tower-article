@@ -159,7 +159,7 @@ memory/
 - 搜索结果有质量阈值，不是"找到就注入"
 
 **工程 Insight**：
-> 搜索 timeout 从 15s 提到 60s 只解决了配置层问题。真正的瓶颈在 query expansion + LLM rerank 路径。搜索系统需要区分：索引是否更新、embedding 是否覆盖、query path 是否稳定、ranking 是否符合预期。最近一次 audit 里，active-memory 直连 QMD 的长尾曾达到 55-121s；加入 P0.1 direct timeout guard 后，超时被稳定限制在约 10s，代价是慢查询返回空结果而不是继续等待。
+> 搜索 timeout 从 15s 提到 60s 只解决了配置层问题。真正的瓶颈常在 query expansion、LLM rerank、跨 collection 聚合等更深路径。搜索系统需要区分：索引是否更新、embedding 是否覆盖、query path 是否稳定、ranking 是否符合预期。对于主动召回这类前置链路，宁可在明确时限内返回空结果，也不要让一次慢检索拖住整轮对话。
 
 **常见坑**：
 - 只看"文件已索引"，忽略 embedding 覆盖率
@@ -183,14 +183,14 @@ memory/
 - 主动召回 ≠ 无脑注入。有质量阈值、空结果过滤、相关性判断
 - 注入内容明确标记来源，Agent 可以选择忽略
 - 对慢 query 可以选择更轻的搜索模式
-- 对直连检索路径要设置短超时护栏：例如 direct search timeout capped at 10s，并在 debug metadata 里标记 `direct-timeout` / `timedOut`，让空结果可解释、可追踪
+- 对直连检索路径要设置短超时护栏，并在 debug metadata 里标记 timeout / empty-result 原因，让空结果可解释、可追踪
 
 **常见坑**：
 - 低质量摘要污染当前对话
 - Active memory 输出被误当作 trusted fact
 - 召回 subagent timeout 太短，导致频繁空结果
 - **检索后端单点失败传染整条召回链**：active memory 调底层多 collection 检索时，任一子查询抛错会让整条召回退化到 builtin slow path（>10s / 0 hits）。L4 parser 必须 fail-soft（warn + 返回空数组），主动召回层才能稳定
-- **直连检索没有 timeout guard 会产生长尾卡顿**：P0 direct path 可以绕开 subagent 慢路径，但也必须配 P0.1 超时护栏；实测 48.9s / 55-121s 长尾可被压到约 10s，超时返回 empty 是可接受的 fail-closed 行为
+- **直连检索没有 timeout guard 会产生长尾卡顿**：direct path 可以绕开一部分调度开销，但也必须配短超时护栏；超时返回 empty 通常比把用户请求挂住更可控
 
 ---
 
@@ -275,7 +275,7 @@ memory/self-improving/
 - shared-rules 跨 Agent 共享：一个 Agent 的教训，所有 Agent 受益
 - 有 reviewer 和 threshold，防止规则膨胀
 - **agent identity 用唯一规范**：自我迭代目录用 agent id（`agent-A` / `agent-B` / ...），不用 persona name（`Persona-A` / `Persona-B` 这类用户自定义显示名）。所有跨进程协作（cron、patrol、promotion）用同一份 mapping
-- **cron payload 用绝对路径**：周期性自反思任务里写 `memory/self-improving/X/hot.md` 这种相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用 `/root/.openclaw/workspace/memory/self-improving/<id>/...` 的绝对路径
+- **cron payload 用绝对路径或显式 workspace 变量**：周期性自反思任务里写相对路径会被不同 cwd 解析到不同 workspace，造成同一 agent 的内容分裂到多处。统一用明确的 workspace root / 环境变量 / 配置项，不要依赖启动目录
 - **patrol 用枚举白名单**：`KNOWN_AGENTS` + `KNOWN_FILES` 列表化，扫到不在白名单的就报警。这能在第 1 周内发现命名漂移、拼写错误（如 `corrrections.md` 多打一个 r）、persona vs agent-id 大小写分裂
 
 **常见坑**：
@@ -365,20 +365,20 @@ L9 技能进化（workflow → skill）
 
 ## 源码层的小修整：把开源组件做成"工程资产"
 
-诚实地说，把九层塔落到生产时，光配置是不够的。前文 L4（parser fail-soft / QMD JSON 输出与 snippet fallback）、L5（active-memory direct path + 10s timeout guard）和 L6（摘要前 redact secrets / 短源跳过 LLM）提到的几处问题，都需要在开源组件源码上做小幅适配。
+诚实地说，把九层塔落到生产时，光配置是不够的。前文 L4（检索 CLI 输出容错与结果字段 fallback）、L5（主动召回短超时与空结果可解释）和 L6（摘要前敏感信息清理 / 短源跳过 LLM）提到的几处问题，本质上都是第三方组件与本地运行环境之间的适配问题。
 
 这一节不再重复"改什么"，重点谈"怎样让这种修改活下去"——临时 hotfix 会随着 npm 升级或上游 git pull 失效；只有做成可观测、可重启自愈的工程资产，才能真正成为架构的一部分。最佳实践是：
 
 | 要素 | 做法 |
 |---|---|
-| sentinel / marker | 在 patched 区域留 `// PATCH:<name>` 或可 grep 的 marker（如 `direct-timeout` / `timedOut`），apply 脚本据此判断幂等 |
+| sentinel / marker | 在 patched 区域留 `// PATCH:<name>` 或可 grep 的 marker，apply 脚本据此判断幂等 |
 | apply script | 单一 idempotent shell/node/python 脚本，能反复跑 |
 | boot 集成 | gateway 启动时 `ExecStartPre` 自动跑 apply 脚本——上游覆盖目标后下次重启自动重打 |
 | backup 文件 | apply 前 timestamp 备份，rollback 路径明确 |
 | descriptor 入版控 | `.patch` 文件或可读 reinstaller（unified diff + 解释）入 git，编译产物 gitignore |
 | fail-closed | sentinel/anchor 找不到（上游改了函数体）就 fail，主流程容错继续，日志留 trace |
 
-最新 audit 中，这套机制已经扩展为一个 post-upgrade reinstaller：`/root/.openclaw/workspace/patches/_apply-qmd-active-memory-hotpatches.py`，并作为 `apply-patches.sh` 的 Patch 14 在 `openclaw-gateway-root.service` 的 `ExecStartPre` 中运行。它覆盖 `qmd-manager-*.js` 的 `--json` / snippet fallback，以及 `extensions/active-memory/index.js` 的 direct recall path + P0.1 10s timeout guard。换句话说，OpenClaw package upgrade / npm reinstall 覆盖 dist 后，下一次 gateway restart 会自动检查并尝试重打这些 hot patch；如果上游结构变了，它会 fail-closed 留日志，而不是冒险改坏产物。
+更通用的做法，是把这些适配沉淀成 post-upgrade reinstaller，并接入服务启动前检查：它不需要依赖某一次手工 hotfix 的记忆，而是自动验证关键行为（CLI 输出格式是否稳定、结果字段是否兼容、主动召回是否有短超时等）是否仍在。包升级、npm reinstall 或 dist 重建后，下一次服务启动会先检查并尝试重打；如果上游结构变化导致 anchor 找不到，它应该 fail-closed 留日志，而不是冒险改坏产物。
 
 让对开源组件的小修整可被持续维护，而不是"换台机器就丢"。
 
@@ -392,9 +392,9 @@ L9 技能进化（workflow → skill）
 |---|---|---|---|
 | 1 | bootstrap 注入文件超阈值被截断 | L1/L2/L3 | MEMORY.md 严格限制为"规则 + 索引"，自动 promotion 内容拆出去 |
 | 2 | embedding 覆盖率 ≠ 索引完成率 | L4 | "files indexed" 是文件级，"embedded chunks" 是向量级，两者可以差几个数量级 |
-| 3 | 检索 CLI stdout 非 JSON 噪声 | L4 | qmd 类 CLI 在 collection 异常时往 stdout 写 warning，下游 parser 必须 fail-soft |
-| 4 | 多 collection 路径单点失败传染 | L4/L5 | 一个 collection 的子查询抛错不应让整条 active-memory 退化到 builtin |
-| 5 | active-memory 注入低质量摘要 / 直连检索长尾 | L5 | 加 minRelevanceScore + untrusted context 标记；direct path 必须有约 10s timeout guard，超时返回 empty 并记录 `direct-timeout` |
+| 3 | 检索 CLI stdout 非 JSON 噪声 | L4 | 检索类 CLI 在异常时可能往 stdout 写 warning，下游 parser 必须 fail-soft |
+| 4 | 多 collection 路径单点失败传染 | L4/L5 | 一个 collection 的子查询抛错不应让整条主动召回退化到慢 fallback |
+| 5 | active-memory 注入低质量摘要 / 直连检索长尾 | L5 | 加 minRelevanceScore + untrusted context 标记；direct path 必须有短 timeout guard，超时返回 empty 并记录原因 |
 | 6 | **context engine slot 没绑定 = 安静失败** | L6 | `plugins.slots.contextEngine` 缺失时系统不报错，只是 lcm.db 永不增长——必须有 L7 健康监控 |
 | 7 | **LLM 摘要把 secrets 经 FTS 放大** | L6 | 摘要器原样保留 sk-XXX / token，进 summaries 后 lcm_grep 命中、vector embedding 收录、下次组装再注入 prompt——**必须在调 LLM 前 redact** |
 | 8 | 短源做 summary 反而变长 | L6 | 源 < 200 tokens 直接 return 原文，避免"摘要 = timestamp + 原文"的反向膨胀 |
