@@ -21,6 +21,20 @@
 
 > 注：审计文档（运维过程时间线，含具体 chat ID / 内部 session key 等）出于隐私考虑未公开发布。
 
+## 当前工程状态
+
+2026-06-08 最新一轮上下文治理修复已闭环，详情见
+[`remediation/22-qmd-retention-and-patrol-status-2026-06-08.md`](remediation/22-qmd-retention-and-patrol-status-2026-06-08.md)。
+
+本轮把九层塔中的 L4/L5/L6/L7 从"能召回、能压缩"推进到"能巡检、能清噪、能验证、能防回流"：
+
+- QMD stale `custom-*` collection 清理完成，4 个 agent 回到向量水位上限内。
+- `qmd-session-retention.py` + retention manifest + QMD manager skip 补丁已落地并在 gateway restart 后生效。
+- `storage-patrol.sh` 已增加真实 vector 水位和 retained/session summary 指标。
+- doubao warm compression live 已跑通，summary stub 召回验证通过。
+- cron 侧 signals 提炼、`lolita` -> `main` 映射、doubao cap 10K 修正均已完成。
+- LCM weekly audit 健康：DB 309.8MB，WAL 5.7MB，无 size alert。
+
 ## 配套：remediation/
 
 [`remediation/`](remediation/) 目录收录 21 个 idempotent 脚本，覆盖修复过程中的各步骤——qmd 容错 patch、lossless-claw secret redaction、目录合并、qmd cleanup、wiki synthesis cron 等。可作为类似系统的迁移参考。
