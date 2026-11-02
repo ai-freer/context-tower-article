@@ -1,8 +1,8 @@
-# 上下文管理九层塔 · OpenClaw Context Engineering
+# 上下文管理九层塔 · Agent Context Engineering
 
 > 一个真正长期运行的 AI Agent，需要的不是更大的上下文窗口，而是一套完整的上下文治理体系。
 
-本仓库收录 OpenClaw 多 Agent 环境中"上下文管理九层塔"架构的报告、写作输入包与配套修复脚本。
+本仓库收录"上下文管理九层塔"的报告、写作输入包与配套修复脚本。九层塔讨论的是通用 Agent 的记忆与上下文管理；我们的实验场是 OpenClaw 多 Agent 环境，具体实现只作为例子。
 
 ## 在线阅读
 
@@ -21,29 +21,23 @@
 
 > 注：审计文档（运维过程时间线，含具体 chat ID / 内部 session key 等）出于隐私考虑未公开发布。
 
-## 九层塔 2.0（升级草稿，未发布）
+## 九层塔 2.0（未发布）
 
-- [架构升级正文](04-context-tower-2.0.md)：结合 OpenClaw 2.0，梳理九层职责、状态边界与跨层契约。
+- [架构升级正文](04-context-tower-2.0.md)：宿主运行时变强之后，重新梳理九层职责、状态边界与跨层契约；以 OpenClaw 2.0 为例的落地放在附录。
 - [迁移验收清单](05-context-tower-2.0-validation.md)：18 个行为验收场景及发布门槛，尚未执行。
-- 保留原版报告；官方能力仍需逐项核验，不将设计建议当作当前生产状态。
+- [公众号稿](06-context-tower-2.0-wechat.md)：待人工审阅；附录中的 OpenClaw 示例已于 2026-10-31 对照官方文档核对。
+- 保留原版报告；不将设计建议当作当前生产状态。
 
-## 当前工程状态
+## 当前工程状态（实验场：OpenClaw）
 
-2026-06-08 最新一轮上下文治理修复已闭环，详情见
-[`remediation/22-qmd-retention-and-patrol-status-2026-06-08.md`](remediation/22-qmd-retention-and-patrol-status-2026-06-08.md)。
+OpenClaw 2.0 已退役 QMD，检索和召回改由内置 Memory 负责。基于 QMD 的 retention、巡检和 warm compression 机制随之停用：旧的每日 warm compression 定时入口已于 2026-10-31 停用，相关巡检改为检查内置记忆。内置记忆上的 retention 与召回质量尚未验收。
 
-本轮把九层塔中的 L4/L5/L6/L7 从"能召回、能压缩"推进到"能巡检、能清噪、能验证、能防回流"：
-
-- QMD stale `custom-*` collection 清理完成，4 个 agent 回到向量水位上限内。
-- `qmd-session-retention.py` + retention manifest + QMD manager skip 补丁已落地并在 gateway restart 后生效。
-- `storage-patrol.sh` 已增加真实 vector 水位和 retained/session summary 指标。
-- doubao warm compression live 已跑通，summary stub 召回验证通过。
-- cron 侧 signals 提炼、`lolita` -> `main` 映射、doubao cap 10K 修正均已完成。
-- LCM weekly audit 健康：DB 309.8MB，WAL 5.7MB，无 size alert。
+2026-06-08 QMD 时期的治理闭环记录保留在
+[`remediation/22-qmd-retention-and-patrol-status-2026-06-08.md`](remediation/22-qmd-retention-and-patrol-status-2026-06-08.md)，仅作历史参考。
 
 ## 配套：remediation/
 
-[`remediation/`](remediation/) 目录收录 21 个 idempotent 脚本，覆盖修复过程中的各步骤——qmd 容错 patch、lossless-claw secret redaction、目录合并、qmd cleanup、wiki synthesis cron 等。可作为类似系统的迁移参考。
+[`remediation/`](remediation/) 目录收录 21 个 idempotent 脚本，是第一版九层塔（QMD 时期）修复过程的记录，包括 qmd 容错 patch、lossless-claw secret redaction、目录合并、qmd cleanup、wiki synthesis cron 等。其中 QMD 相关脚本不适用于 OpenClaw 2.0，仅作历史参考。
 
 ## License
 
