@@ -62,6 +62,12 @@
 | 20 | `20-restart-and-verify-redaction.sh` | 重启 gateway，验证 patched dist 加载、redactLcmSecrets 在 production 中 |
 | 21 | `21-commit-lossless-claw-patch.sh` | 调研 win4r/lossless-claw-enhanced repo 状态（不 push 上游，只本地保存）|
 
+### 2026-06-08 续章：QMD retention + patrol 闭环
+
+| # | 文档 | 目的 |
+|---|---|---|
+| 22 | `22-qmd-retention-and-patrol-status-2026-06-08.md` | 记录 QMD stale collection 清理、session retention、manifest skip、storage patrol 指标、warm compression live 与召回验证的当前闭环状态 |
+
 **`_apply-qmd-defensive-parse.js`** 之外还有 **`_apply-lossless-claw-redact.sh`**
 （同样安装在 `~/workspace/patches/`），由 `apply-patches.sh` 在 gateway
 启动时调用，幂等。
@@ -80,7 +86,8 @@ QMD + active-memory 事故后的手工 dist hot patch：
 `/usr/lib/node_modules/openclaw/dist/*` 后，下一次 gateway restart 会先运行它；
 如果上游代码结构变化导致 anchor 找不到，它会拒绝冒险修改并留下错误日志。
 
-这三个 reinstaller 一起构成 OpenClaw 修复体系的核心 patch 基础设施。
+这些 reinstaller 加上 2026-06-08 的 QMD retention / patrol 链路，一起构成
+OpenClaw 修复体系的核心 patch 与上下文治理基础设施。
 
 ## 关键 backup 路径
 
@@ -110,4 +117,5 @@ QMD + active-memory 事故后的手工 dist hot patch：
 
 > 6 个 step、~3 小时实战、修了 1 个 P0 + 4 个 P1 + 2 个 P2，释放 350MB
 > sqlite 空间，patrol 从 13 警告降到 0 违规 + 7 cosmetic 警告，建立了
-> 可重启不丢失的 patch 基础设施。
+> 可重启不丢失的 patch 基础设施。2026-06-08 续章进一步补齐了
+> QMD 向量水位治理、session retention、summary stub 召回验证和巡检指标。
