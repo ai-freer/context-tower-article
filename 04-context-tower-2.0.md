@@ -206,7 +206,6 @@
 ## 参考与发布前核验
 
 - 原版：[02-report.md](02-report.md)
-- 历史实践：[`remediation/`](remediation/) 中第一版时期的治理记录
 - 官方版本依据：[OpenClaw 2.0 发布总览](https://docs.openclaw.ai/releases/2026.8.1)、[会话存储与备份](https://docs.openclaw.ai/releases/2026.8.1/quality-of-life-improvements)、[Memory 与 QMD 迁移](https://docs.openclaw.ai/releases/2026.8.1/memory)、[Skill Workshop 与自学习](https://docs.openclaw.ai/releases/2026.8.1/skills)。
 - 官方持续更新文档：[记忆来源与遗忘](https://docs.openclaw.ai/concepts/memory-provenance)、[Dreaming](https://docs.openclaw.ai/concepts/dreaming)、[Active Memory](https://docs.openclaw.ai/concepts/active-memory)、[安全边界](https://docs.openclaw.ai/gateway/security)、[数据库版本与回退](https://docs.openclaw.ai/reference/database-schemas/agent-schema-history)。这些页面会随版本变化，操作时须核对目标版本。
 
