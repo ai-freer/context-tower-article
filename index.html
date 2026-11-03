@@ -2,224 +2,356 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>上下文管理九层塔 · OpenClaw Context Engineering</title>
-<meta name="description" content="OpenClaw Agent 上下文管理九层塔架构 — 报告、审计、写作输入包">
-<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>上下文管理九层塔 2.0 · Agent Context Engineering</title>
+<meta name="description" content="上下文管理九层塔 2.0：从记忆组件到可托付的 Agent Runtime。九层能力、五类状态、四条契约和 18 个验收场景。">
+<meta property="og:title" content="上下文管理九层塔 2.0">
+<meta property="og:description" content="从记忆组件到可托付的 Agent Runtime">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230E2441'/%3E%3Cpath d='M16 4 8 10h16zM9 13h14M7 18h18M5 23h22M4 28h24' fill='none' stroke='%23DDB961' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;600&family=ZCOOL+XiaoWei&display=swap">
 <style>
-:root {
-  --fg: #1f2328; --fg-muted: #57606a; --fg-soft: #6e7781;
-  --bg: #fdfdfb; --bg-soft: #f6f5f0; --border-soft: #ece8dc;
-  --accent: #b8431e; --accent-soft: #f3d9cf;
+/* 与 2.0 报告同一套「瓷青泥金」视觉：月白纸页 + 整幅瓷青图版 */
+:root{
+  --paper:#EDF1F0; --paper-2:#E0E7E7; --paper-3:#F6F8F7;
+  --ink:#12233A; --ink-2:#44566B; --line:#B7C4CA;
+  --gold:#8A6417; --malachite:#1B6B5B; --azurite:#1F5593; --cinnabar:#B5301C;
+  --plate:#0E2441; --plate-2:#17345C; --plate-ink:#F3EAD2; --plate-ink-2:#B9C4CF; --plate-gold:#DDB961; --plate-line:#34507A;
+  --plate-mal:#6CC4AB; --plate-azu:#8DBBEE; --plate-cin:#EE7458;
+  --display:"ZCOOL XiaoWei","Noto Serif SC","Songti SC","STSong",serif;
+  --body:"Noto Serif SC","Songti SC","STSong",serif;
+  --ui:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"IBM Plex Mono","SFMono-Regular",Menlo,monospace;
+  --gut-l:max(16px,env(safe-area-inset-left,0px)); --gut-r:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fg: #e6e1d6; --fg-muted: #a8a395; --fg-soft: #847f72;
-    --bg: #1a1a18; --bg-soft: #232220; --border-soft: #2e2c28;
-    --accent: #e07a52; --accent-soft: #5a3526;
-  }
+@media (prefers-color-scheme:dark){:root{
+  --paper:#0B1A30; --paper-2:#11243F; --paper-3:#0E2039;
+  --ink:#EDE7D6; --ink-2:#A8B4C1; --line:#2C4464;
+  --gold:#DDB961; --malachite:#6CC4AB; --azurite:#8DBBEE; --cinnabar:#EE7458; color-scheme:dark}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.85;overflow-x:hidden}
+a{color:inherit;text-underline-offset:3px}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--cinnabar);outline-offset:2px}
+h1,h2,h3,p,ul,ol,figure{margin:0;padding:0}
+ul,ol{list-style:none}
+.wrap{max-width:1080px;margin-inline:auto;padding-left:var(--gut-l);padding-right:var(--gut-r)}
+section{padding-block:clamp(56px,8vw,96px)}
+.eyebrow{font-family:var(--ui);font-size:13px;letter-spacing:.14em;color:var(--gold)}
+h2{font-family:var(--display);font-weight:400;font-size:clamp(30px,4.4vw,44px);line-height:1.25;text-wrap:balance;margin-top:10px}
+.intro{max-width:36em;margin-top:14px}
+.band{background:var(--plate);color:var(--plate-ink)}
+.band .eyebrow{color:var(--plate-gold)}
+
+/* 封面 */
+.hero{position:relative;background:var(--plate);color:var(--plate-ink);overflow:hidden;min-height:clamp(620px,52vw,800px);display:flex}
+.hero-art{position:absolute;top:0;bottom:0;right:0;aspect-ratio:1672/941;height:100%;-webkit-mask-image:linear-gradient(90deg,transparent 12%,#000 42%);mask-image:linear-gradient(90deg,transparent 12%,#000 42%)}
+.hero-art img,.hero-art svg{position:absolute;inset:0;width:100%;height:100%}
+.hero .wrap{position:relative;width:100%;display:grid;align-content:center;padding-block:clamp(40px,5vw,64px)}
+.hero-copy{max-width:600px;display:grid;gap:20px;justify-items:start}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;color:var(--plate-gold)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(46px,8vw,92px);line-height:1.08;letter-spacing:.01em}
+h1 small{display:block;font-size:.5em;line-height:1.3;color:var(--plate-gold);letter-spacing:.06em}
+.sub{font-size:clamp(19px,2.4vw,25px);line-height:1.5}
+.lead{color:var(--plate-ink-2);font-size:16px;max-width:33em}
+.acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--ui);font-size:14.5px;font-weight:500;line-height:1.3;padding:11px 18px;text-decoration:none;border:1px solid var(--plate-line);transition:background .2s,border-color .2s}
+.btn:hover{border-color:var(--plate-gold)}
+.btn.pri{background:var(--plate-gold);color:var(--plate);border-color:var(--plate-gold)}
+.btn.pri:hover{background:#EBCD80}
+.btn svg{width:16px;height:10px;transition:transform .2s}
+.btn:hover svg{transform:translateX(3px)}
+.readout{width:100%;max-width:520px;border-top:1px solid var(--plate-line);padding-top:12px;display:grid;gap:8px;font-family:var(--ui)}
+.scale{display:flex;gap:4px;flex-wrap:wrap}
+.scale button{font-family:var(--mono);font-size:12px;line-height:1;width:32px;height:28px;background:transparent;color:var(--plate-ink-2);border:1px solid var(--plate-line);transition:background .2s,color .2s}
+.scale button[aria-pressed="true"]{background:var(--plate-gold);color:var(--plate);border-color:var(--plate-gold)}
+.ro-name{font-family:var(--display);font-size:24px;line-height:1.3;min-height:1.3em}
+.ro-text{font-size:14px;line-height:1.7;color:var(--plate-ink-2);min-height:1.7em}
+.ro-c{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px}
+.ro-c span{display:inline-flex;align-items:center;gap:6px;color:var(--plate-ink-2);opacity:.38;transition:opacity .3s}
+.ro-c span.on{opacity:1;color:var(--plate-ink)}
+.ro-c i{width:9px;height:9px;display:inline-block}
+.tick{fill:var(--plate-gold);font-family:var(--mono);font-size:21px}
+.tickline{stroke:var(--plate-gold);stroke-width:1.5}
+.flow-line{stroke:var(--plate-gold);stroke-width:4;fill:none;stroke-dasharray:44 600;animation:rise 7s linear infinite}
+.flow-line.b{animation-delay:-3.5s;stroke:var(--plate-mal)}
+@keyframes rise{from{stroke-dashoffset:680}to{stroke-dashoffset:0}}
+.fb{fill:#DDB961;fill-opacity:0;stroke:#DDB961;stroke-opacity:0;stroke-width:2;transition:fill-opacity .35s,stroke-opacity .35s;cursor:pointer}
+.fb.on{fill-opacity:.2;stroke-opacity:.9}
+.j{transition:opacity .3s}
+@media (max-width:820px){
+  .hero{display:block;min-height:0}
+  .hero-art{position:relative;width:100%;height:340px;aspect-ratio:auto;-webkit-mask-image:linear-gradient(180deg,#000 78%,transparent);mask-image:linear-gradient(180deg,#000 78%,transparent)}
+  .hero-art img{object-fit:cover;object-position:right center}
+  .hero .wrap{padding-top:10px}
+  .acts,.btn{width:100%}
+  .btn{justify-content:center}
 }
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.7;
-  color: var(--fg);
-  background: var(--bg);
-  -webkit-font-smoothing: antialiased;
-}
-.wrap {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 56px 24px 96px;
-}
-.hero {
-  display: block;
-  margin-bottom: 46px;
-}
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 24px;
-}
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 0 16px;
-  color: var(--fg);
-  text-decoration: none;
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  background: var(--bg-soft);
-  font-size: 14px;
-  font-weight: 600;
-}
-.button.primary {
-  color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.hero-media {
-  min-width: 0;
-}
-.hero-media img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 8px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-soft);
-  box-shadow: 0 20px 48px rgba(64, 50, 38, 0.12);
-}
-.card {
-  display: block;
-  text-decoration: none;
-  color: var(--fg);
-  background: var(--bg-soft);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  padding: 20px 24px;
-  margin-bottom: 14px;
-  transition: border-color 0.15s, transform 0.15s;
-}
-.card:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-.card.primary {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  border-width: 1px 1px 1px 4px;
-}
-.card-head {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-.card-num {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-}
-.card-title {
-  font-size: 17px;
-  font-weight: 600;
-  flex: 1;
-}
-.card-tag {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: var(--bg);
-  color: var(--fg-soft);
-  padding: 2px 8px;
-  border-radius: 3px;
-  border: 1px solid var(--border-soft);
-}
-.card.primary .card-tag {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-.card-desc {
-  font-size: 14.5px;
-  color: var(--fg-muted);
-  margin: 0;
-}
-.divider {
-  margin: 36px 0 16px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg-soft);
-}
-footer {
-  margin-top: 64px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-soft);
-  font-size: 13px;
-  color: var(--fg-soft);
-}
-footer a { color: inherit; }
-@media (max-width: 900px) {
-  .wrap { padding-top: 36px; }
-}
-@media (max-width: 620px) {
-  .wrap { padding-left: 18px; padding-right: 18px; }
-  .button { width: 100%; }
-}
+
+/* 一二版对照 */
+.vs{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:clamp(16px,3vw,36px);align-items:start;margin-top:26px}
+.vs small{font-family:var(--ui);font-size:13px;color:var(--ink-2);letter-spacing:.1em}
+.vs p{font-family:var(--display);font-size:clamp(24px,3.4vw,34px);line-height:1.35;text-wrap:balance}
+.vs .now p{color:var(--cinnabar)}
+.vs svg{width:64px;height:16px;margin-top:40px;color:var(--gold)}
+@media (max-width:680px){.vs{grid-template-columns:minmax(0,1fr)}.vs svg{display:none}}
+
+/* 九层 × 四契约 */
+.loom{margin-top:30px;display:grid;gap:0;font-family:var(--ui)}
+.lh,.lr{display:grid;grid-template-columns:minmax(0,12em) minmax(0,1fr);gap:14px;align-items:center}
+.lh{padding-bottom:6px}
+.lc{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));position:relative}
+.lh .lc span{font-family:var(--mono);font-size:12px;text-align:center;color:var(--gold)}
+.lr{padding:13px 0;border-top:1px solid var(--line);text-decoration:none;transition:background .2s}
+.lr:last-child{border-bottom:1px solid var(--line)}
+.lr:hover{background:var(--paper-2)}
+.lr b{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.3;display:block}
+.lr small{font-size:12.5px;line-height:1.5;color:var(--ink-2);display:block}
+.lr .lc{--c:var(--azurite);height:22px;align-items:center}
+.lr .lc::before{content:"";position:absolute;left:5%;right:5%;top:50%;height:1px;background:var(--c);opacity:.5}
+.lr .lc::after{content:"";position:absolute;top:50%;left:5%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:var(--c);animation:pulse var(--d,5s) linear infinite}
+@keyframes pulse{from{left:5%;opacity:0}8%{opacity:1}92%{opacity:1}to{left:95%;opacity:0}}
+.lr .lc i{justify-self:center;width:13px;height:13px;background:transparent;position:relative;z-index:1}
+.lr .lc i.on{background:var(--c);transition:transform .2s}
+.loom.in .lc i.on{animation:pop .45s cubic-bezier(.2,1.6,.5,1) backwards;animation-delay:calc(var(--i)*55ms)}
+@keyframes pop{from{transform:scale(0)}}
+.lr:hover .lc i.on{transform:scale(1.25)}
+@media (max-width:680px){.lh>span:first-child{display:none}.lh,.lr{grid-template-columns:minmax(0,1fr);gap:6px}}
+
+/* 五类状态 */
+.objs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(10px,2vw,22px);margin-top:30px}
+.obj{display:grid;gap:8px;align-content:start;text-decoration:none;font-family:var(--ui)}
+.obj figure{height:132px;display:grid;place-items:center;position:relative}
+.obj img{max-height:132px;width:auto;transition:transform .3s}
+.obj:hover img{transform:translateY(-4px)}
+.obj.lamp figure::before{content:"";position:absolute;left:50%;top:50%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;background:radial-gradient(closest-side,rgba(221,185,97,.26),transparent);animation:glow 3.4s ease-in-out infinite}
+@keyframes glow{50%{transform:scale(1.18);opacity:.55}}
+.obj b{font-family:var(--display);font-weight:400;font-size:21px;line-height:1.3}
+.obj span{font-size:13px;line-height:1.65;color:var(--plate-ink-2)}
+@media (max-width:820px){.objs{grid-template-columns:minmax(0,1fr);gap:0}
+  .obj{grid-template-columns:96px minmax(0,1fr);column-gap:14px;padding:8px 0;border-top:1px solid var(--plate-line);align-items:center}
+  .obj figure{height:78px;grid-row:span 2}.obj img{max-height:78px}.obj.lamp figure::before{width:90px;height:90px;margin:-45px 0 0 -45px}}
+
+/* 文档 */
+.docs{margin-top:26px;border-top:1px solid var(--ink)}
+.doc{display:grid;grid-template-columns:3.2em minmax(0,1fr) auto;gap:14px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--line);text-decoration:none;font-family:var(--ui);transition:padding .2s,background .2s}
+.doc:hover{background:var(--paper-2);padding-left:8px;padding-right:8px}
+.doc code{font-family:var(--mono);font-size:13px;color:var(--gold)}
+.doc b{font-family:var(--display);font-weight:400;font-size:22px;line-height:1.35;display:block}
+.doc p{font-size:14.5px;line-height:1.75;color:var(--ink-2)}
+.doc em{font-style:normal;font-size:12px;color:var(--ink-2);border:1px solid var(--line);padding:1px 7px;white-space:nowrap}
+.doc.pri b{color:var(--cinnabar)}
+@media (max-width:560px){.doc{grid-template-columns:2.6em minmax(0,1fr)}.doc em{display:none}}
+
+/* 第一版档案 */
+.arch{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(22px,4vw,44px);margin-top:26px;align-items:start}
+.arch figure a{display:block;border:1px solid var(--line);background:var(--paper-3)}
+.arch img{width:100%;height:auto}
+.arch figcaption{font-family:var(--ui);font-size:12.5px;line-height:1.7;color:var(--ink-2);margin-top:8px}
+.tl{display:block;width:100%;height:auto;max-width:440px;margin-bottom:6px}
+.tl text{font-family:var(--mono);font-size:12px;fill:var(--ink-2)}
+.tl .tt{font-family:var(--ui);font-size:13px;fill:var(--ink)}
+.arch-note{font-family:var(--ui);font-size:14.5px;line-height:1.8;color:var(--ink-2)}
+.arch .docs{margin-top:14px}
+.arch .doc{padding:11px 0}
+.arch .doc b{font-size:19px}
+.arch .doc p{font-size:13.5px}
+@media (max-width:760px){.arch{grid-template-columns:minmax(0,1fr)}}
+
+/* 收尾 */
+.end{padding-bottom:0;background:var(--plate);color:var(--plate-ink);overflow:hidden}
+.end .wrap{display:grid;gap:14px;justify-items:start}
+.end p.say{font-family:var(--display);font-size:clamp(23px,3.4vw,33px);line-height:1.4;max-width:24em;text-wrap:balance}
+.end .art{-webkit-mask-image:linear-gradient(180deg,transparent,#000 24%);mask-image:linear-gradient(180deg,transparent,#000 24%);margin-top:clamp(0px,1vw,12px)}
+.end .art img{width:100%;height:auto}
+footer{background:var(--plate);color:var(--plate-ink-2);font-family:var(--ui);font-size:13px;line-height:1.8;padding-block:18px 28px;padding-bottom:max(28px,env(safe-area-inset-bottom,0px))}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
-<section class="hero" aria-labelledby="hero-title">
-<h1 id="hero-title" class="sr-only">上下文管理九层塔</h1>
-<div class="hero-media">
-<img src="assets/context-tower-hero.svg" alt="上下文管理九层塔信息图：基础层、运行时层、进化层组成长期运行 Agent 的上下文治理闭环">
-</div>
-<div class="hero-actions">
-<a class="button primary" href="03-report.html">阅读 HTML 版</a>
-<a class="button" href="https://github.com/ai-freer/context-tower-article/blob/main/02-report.md">查看 Markdown 源</a>
-</div>
+
+<header class="hero">
+  <div class="hero-art">
+    <img src="assets/2.0/web/hero.webp" alt="瓷青纸上的九层木塔剖面图，每层陈列不同的器物" width="1672" height="941">
+    <svg id="ov" viewBox="0 0 1672 941" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"></svg>
+  </div>
+  <div class="wrap">
+    <div class="hero-copy">
+      <p class="kicker">AGENT CONTEXT ENGINEERING</p>
+      <h1><small>上下文管理</small>九层塔 2.0</h1>
+      <p class="sub">从记忆组件到可托付的 Agent Runtime</p>
+      <p class="lead">长期运行的 Agent 光记住过去还不够。它还得知道事实从哪来、任务做到哪一步、谁有权看什么，以及失败后怎么恢复。</p>
+      <div class="acts">
+        <a class="btn pri" href="04-context-tower-2.0.html">阅读 2.0 报告 <svg viewBox="0 0 16 10" aria-hidden="true"><path d="M0 5h14M10 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></a>
+        <a class="btn" href="https://github.com/ai-freer/context-tower-article/blob/main/05-context-tower-2.0-validation.md">验收清单</a>
+        <a class="btn" href="#v1">第一版</a>
+      </div>
+      <div class="readout" aria-live="polite">
+        <div class="scale" id="scale" role="group" aria-label="选择楼层"></div>
+        <div class="ro-name" id="roName"></div>
+        <div class="ro-text" id="roText"></div>
+        <div class="ro-c" id="roC" aria-label="这一层关联的契约"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+<section>
+  <div class="wrap">
+    <p class="eyebrow">2.0 改了什么</p>
+    <h2>没有加层，补上了层与层之间的契约</h2>
+    <div class="vs">
+      <div><small>第一版解决</small><p>怎样让 Agent 记得更久</p></div>
+      <svg viewBox="0 0 64 16" aria-hidden="true"><path d="M0 8h60M52 2l9 6-9 6" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>
+      <div class="now"><small>第二版解决</small><p>怎样知道它记对了、用对了，并且能安全恢复、撤销与演进</p></div>
+    </div>
+  </div>
 </section>
 
-<div class="divider">面向读者</div>
+<section style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow">九层能力 × 四条契约</p>
+    <h2>九层管分工，契约管交接</h2>
+    <p class="intro">方块标出每条契约关联的楼层。层号只用来归类职责，不代表调用顺序；契约的作用范围也不限于这些楼层。点一行可以直接读对应章节。</p>
+    <div class="loom" id="loom"></div>
+  </div>
+</section>
 
-<a class="card primary" href="03-report.html">
-<div class="card-head">
-<span class="card-num">03</span>
-<span class="card-title">报告 · HTML 版（推荐）</span>
-<span class="card-tag">阅读</span>
-</div>
-<p class="card-desc">完整的九层塔架构教程，含 4 个核心观点、L1-L9 详解、三层 vs 九层对比、源码层适配最佳实践、14 个最容易踩的坑。补入了从最新运维审计中抽象出的 CLI 输出容错、snippet fallback、主动召回短超时和升级后自愈机制。带目录导航 / 阅读进度 / 自动 light-dark 主题。</p>
-</a>
+<section class="band">
+  <div class="wrap">
+    <p class="eyebrow">五类状态</p>
+    <h2>这五类状态，不能都叫「记忆」</h2>
+    <div class="objs">
+      <a class="obj" href="04-context-tower-2.0.html#states"><figure><img src="assets/2.0/web/s1.webp" alt="手卷" loading="lazy"></figure><b>会话事实</b><span>真实发生过的消息和工具结果</span></a>
+      <a class="obj lamp" href="04-context-tower-2.0.html#states"><figure><img src="assets/2.0/web/s2.webp" alt="灯下的书页" loading="lazy"></figure><b>当前推理上下文</b><span>从事实和摘要组装出的有限窗口</span></a>
+      <a class="obj" href="04-context-tower-2.0.html#states"><figure><img src="assets/2.0/web/s3.webp" alt="书匣" loading="lazy"></figure><b>长期派生记忆</b><span>提炼的事实、项目知识、索引和经验</span></a>
+      <a class="obj" href="04-context-tower-2.0.html#states"><figure><img src="assets/2.0/web/s4.webp" alt="账簿与算筹" loading="lazy"></figure><b>任务执行状态</b><span>做到哪一步，下一步是什么</span></a>
+      <a class="obj" href="04-context-tower-2.0.html#states"><figure><img src="assets/2.0/web/s5.webp" alt="印章与钥匙" loading="lazy"></figure><b>能力与策略状态</b><span>技能的版本、所有者和修改权限</span></a>
+    </div>
+  </div>
+</section>
 
-<div class="divider">面向贡献者 / 工程师</div>
+<section>
+  <div class="wrap">
+    <p class="eyebrow">2.0 文档</p>
+    <h2>从这里开始读</h2>
+    <div class="docs">
+      <a class="doc pri" href="04-context-tower-2.0.html"><code>04</code><div><b>九层塔 2.0 报告</b><p>交互版：九层剖面、周报案例、提交水位、回执核验、撤销演示和附录。</p></div><em>推荐</em></a>
+      <a class="doc" href="https://github.com/ai-freer/context-tower-article/blob/main/05-context-tower-2.0-validation.md"><code>05</code><div><b>迁移验收清单</b><p>18 个行为验收场景、通过标准和证据要求，目前都还没有执行。</p></div><em>.md</em></a>
+      <a class="doc" href="https://github.com/ai-freer/context-tower-article/blob/main/04-context-tower-2.0.md"><code>04</code><div><b>报告 Markdown 源</b><p>引用、改写和 fork 都从这里开始。</p></div><em>.md</em></a>
+    </div>
+  </div>
+</section>
 
-<a class="card" href="https://github.com/ai-freer/context-tower-article/blob/main/02-report.md">
-<div class="card-head">
-<span class="card-num">02</span>
-<span class="card-title">报告 · Markdown 源</span>
-<span class="card-tag">.md</span>
-</div>
-<p class="card-desc">报告 v2 的 markdown 源文件。fork / 改写 / 引用都从这里开始。</p>
-</a>
+<section id="v1" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow">版本档案</p>
+    <h2>第一版仍然可读</h2>
+    <div class="arch">
+      <figure>
+        <a href="03-report.html"><img src="assets/context-tower-hero.svg" alt="第一版九层塔信息图：基础层、运行时层、进化层组成上下文治理闭环" loading="lazy"></a>
+        <figcaption>第一版信息图：基础层、运行时层、进化层。</figcaption>
+      </figure>
+      <div>
+        <svg class="tl" viewBox="0 0 440 66" role="img" aria-label="2026 年 5 月发布第一版，2026 年 11 月发布第二版">
+          <path id="tlp" d="M12 34H428" stroke="var(--line)" stroke-width="1.5" fill="none"/>
+          <circle r="4" fill="var(--cinnabar)"><animateMotion dur="5s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.8;1" calcMode="linear"><mpath href="#tlp"/></animateMotion></circle>
+          <rect x="7" y="29" width="10" height="10" fill="var(--paper)" stroke="var(--ink-2)"/><rect x="423" y="29" width="10" height="10" fill="var(--cinnabar)"/>
+          <text class="tt" x="12" y="18">第一版</text><text x="12" y="58">2026-05</text>
+          <text class="tt" x="428" y="18" text-anchor="end">第二版</text><text x="428" y="58" text-anchor="end">2026-11</text>
+        </svg>
+        <p class="arch-note">第一版来自 OpenClaw 多 Agent 环境的实际运行经验，九层架构就是在解决一个个实际问题的过程中长出来的。它写于 QMD 时期；OpenClaw 2.0 已退役 QMD，QMD 相关做法只作历史参考。</p>
+        <div class="docs">
+          <a class="doc" href="03-report.html"><code>03</code><div><b>第一版报告</b><p>L1–L9 详解、三层与九层对比、源码层适配和 14 个常见的坑。</p></div><em>HTML</em></a>
+          <a class="doc" href="https://github.com/ai-freer/context-tower-article/blob/main/02-report.md"><code>02</code><div><b>第一版 Markdown 源</b><p>第一版报告的源文件。</p></div><em>.md</em></a>
+          <a class="doc" href="https://github.com/ai-freer/context-tower-article/blob/main/01-brief.md"><code>01</code><div><b>写作输入包</b><p>文章定位、脱敏原则、九层模板、上游适配和踩坑清单。</p></div><em>.md</em></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<a class="card" href="https://github.com/ai-freer/context-tower-article/blob/main/01-brief.md">
-<div class="card-head">
-<span class="card-num">01</span>
-<span class="card-title">写作输入包（Brief）</span>
-<span class="card-tag">.md</span>
-</div>
-<p class="card-desc">报告动笔前的素材包：文章定位、脱敏原则、9 层细化模板、上游适配、踩坑清单。理解作者写作思路从这里看。</p>
-</a>
+<section class="end">
+  <div class="wrap">
+    <p class="say">可靠的 Agent Runtime 靠的不是层数，而是每次状态变化都有清楚的责任和可查的证据。</p>
+    <a class="btn pri" href="04-context-tower-2.0.html">阅读 2.0 报告 <svg viewBox="0 0 16 10" aria-hidden="true"><path d="M0 5h14M10 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></a>
+  </div>
+  <div class="art"><img src="assets/2.0/web/closing.webp" alt="青绿山水间，远处的九层塔已无脚手架，朱红落日贴近地平线" width="2000" height="667" loading="lazy"></div>
+</section>
+</main>
+<footer><div class="wrap">源码 <a href="https://github.com/ai-freer/context-tower-article">ai-freer/context-tower-article</a> · CC BY 4.0 · 配图由 AI 生成，属于隐喻插图，不是架构图。</div></footer>
 
-<footer>
-基于 OpenClaw 多 Agent 环境三个多月的实际运行经验，以及近一个多月对九层上下文架构的集中升级与整理。九层塔不是一次性设计出来的，而是在解决一个又一个实际问题的过程中逐步演化而成。
-<br><br>
-源码 <a href="https://github.com/ai-freer/context-tower-article">ai-freer/context-tower-article</a>
-</footer>
-</div>
+<script>
+(function(){
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+var $=function(s,r){return (r||document).querySelector(s)};
+var NS='http://www.w3.org/2000/svg';
+function el(n,a,p,t){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;if(p)p.appendChild(e);return e}
+var L=[
+ ['身份注入','分支、迁移后身份与访问范围不漂移'],
+ ['规则治理','被禁止操作无法通过换工具或重试绕过'],
+ ['文件记忆','可定位一条记忆的证据和撤销范围'],
+ ['语义检索','清理后不回流，重建后不恢复已禁用派生物'],
+ ['主动召回','能命中该命中的，也不能命中不该暴露的'],
+ ['会话生存','重启后事实不漏、重放不重、上下文可追溯'],
+ ['后台整理','系统噪声不晋升，被排除来源不再生成记忆'],
+ ['自我迭代','一次性偏好不变成全局规则，旧规则可退役'],
+ ['能力进化','不越权改用户技能，安装与实际可用一致']
+];
+var C=[
+ {k:'data',n:'数据',d:'确认成功指什么',a:'c-data',l:[3,4,5,6,7],c:'var(--azurite)',p:'#8DBBEE',t:'6s'},
+ {k:'life',n:'生命周期',d:'重启与迁移后由谁继续',a:'c-life',l:[1,4,6,9],c:'var(--malachite)',p:'#6CC4AB',t:'8s'},
+ {k:'auth',n:'授权与撤销',d:'可以记住，不等于可以透露',a:'c-auth',l:[1,2,3,4,5,7,8,9],c:'var(--cinnabar)',p:'#EE7458',t:'7s'},
+ {k:'acc',n:'验收',d:'看行为，而不只看产物',a:'c-acc',l:[1,2,3,4,5,6,7,8,9],c:'var(--gold)',p:'#DDB961',t:'5s'}
+];
+/* 封面覆盖层：九层刻度、楼层高亮、沿内柱上行的光 */
+var ov=$('#ov'),beams=[818,741,670,600,529,463,397,330,264,198],bands=[],joints=[];
+el('path',{class:'flow-line',d:'M1300 830 V130'},ov);
+el('path',{class:'flow-line b',d:'M1453 830 V130'},ov);
+L.forEach(function(x,i){
+  var top=beams[i+1],bot=beams[i],y=(top+bot)/2;
+  el('path',{class:'tickline',d:'M1596 '+y+' H1622'},ov);
+  el('text',{class:'tick',x:1630,y:y+7},ov,'L'+(i+1));
+  var r=el('rect',{class:'fb',x:1232,y:top+3,width:292,height:bot-top-6},ov);
+  r.addEventListener('mouseenter',function(){hold();set(i)});
+  r.addEventListener('click',function(){hold();set(i)});
+  bands.push(r);
+});
+C.forEach(function(c,j){var g=el('rect',{class:'j',x:1532,y:0,width:12,height:12,fill:c.p,opacity:0},ov);joints.push(g)});
+var sc=$('#scale'),rc=$('#roC'),btn=[];
+L.forEach(function(x,i){var b=document.createElement('button');b.type='button';b.textContent='L'+(i+1);b.setAttribute('aria-label','L'+(i+1)+' '+x[0]);b.addEventListener('click',function(){hold();set(i)});sc.appendChild(b);btn.push(b)});
+var chips=C.map(function(c){var s=document.createElement('span');s.innerHTML='<i style="background:'+c.p+'"></i>'+c.n;rc.appendChild(s);return s});
+var cur=0;
+function set(i){cur=i;
+  bands.forEach(function(b,n){b.classList.toggle('on',n===i)});
+  btn.forEach(function(b,n){b.setAttribute('aria-pressed',n===i)});
+  $('#roName').textContent='L'+(i+1)+' '+L[i][0];$('#roText').textContent=L[i][1];
+  var y=(beams[i]+beams[i+1])/2,n=0;
+  C.forEach(function(c,j){var on=c.l.indexOf(i+1)>=0;chips[j].classList.toggle('on',on);
+    joints[j].setAttribute('opacity',on?1:0);joints[j].setAttribute('y',y-26+n*17);if(on)n++});
+}
+var timer=null,resume=null;
+function play(){if(reduce||timer)return;timer=setInterval(function(){set((cur+1)%9)},2200)}
+function hold(){clearInterval(timer);timer=null;clearTimeout(resume);resume=setTimeout(play,9000)}
+set(0);
+if('IntersectionObserver' in window){new IntersectionObserver(function(e){if(e[0].isIntersecting)play();else{clearInterval(timer);timer=null}},{threshold:.2}).observe($('.hero'))}else play();
+
+/* 九层 × 四契约 */
+var loom=$('#loom'),h='<div class="lh"><span></span><div class="lc">';
+for(var i=1;i<=9;i++)h+='<span>L'+i+'</span>';
+h+='</div></div>';
+C.forEach(function(c){h+='<a class="lr" href="04-context-tower-2.0.html#'+c.a+'"><div><b>'+c.n+'</b><small>'+c.d+'</small></div><div class="lc" style="--c:'+c.c+';--d:'+c.t+'">';
+  for(var i=1;i<=9;i++)h+='<i'+(c.l.indexOf(i)>=0?' class="on" style="--i:'+i+'"':'')+'></i>';
+  h+='</div></a>'});
+loom.innerHTML=h;
+if('IntersectionObserver' in window){new IntersectionObserver(function(e,o){if(e[0].isIntersecting){loom.classList.add('in');o.disconnect()}},{threshold:.3}).observe(loom)}
+if(reduce){Array.prototype.forEach.call(document.querySelectorAll('svg'),function(s){if(s.pauseAnimations)s.pauseAnimations()})}
+})();
+</script>
 </body>
 </html>
